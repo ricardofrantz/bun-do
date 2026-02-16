@@ -1,0 +1,47 @@
+{
+  "name": "bun-do",
+  "version": "1.0.0",
+  "description": "Fast local-first todo app — Bun + Alpine.js, zero dependencies",
+  "type": "module",
+  "bin": {
+    "bun-do": "cli.ts"
+  },
+  "files": [
+    "cli.ts",
+    "server.ts",
+    "static/",
+    "data/tasks.example.json",
+    "bin/",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "start": "bun run server.ts",
+    "dev": "bun --watch run server.ts"
+  },
+  "keywords": [
+    "bun",
+    "todo",
+    "task-manager",
+    "self-hosted",
+    "local-first",
+    "alpine-js",
+    "typescript",
+    "json-storage",
+    "calendar",
+    "no-dependencies"
+  ],
+  "author": "Ricardo Vieira",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ricardofrantz/bun-do.git"
+  },
+  "homepage": "https://github.com/ricardofrantz/bun-do#readme",
+  "engines": {
+    "bun": ">=1.0.0"
+  },
+  "devDependencies": {
+    "bun-types": "^1.3.9"
+  }
+}

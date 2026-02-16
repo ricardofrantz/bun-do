@@ -1,0 +1,8 @@
+node_modules/
+logfile/
+.venv/
+__pycache__/
+
+# Data files (personal), but keep the example
+data/*.json
+!data/tasks.example.json

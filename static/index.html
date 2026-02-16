@@ -1,0 +1,2618 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Todo</title>
+<link rel="icon" href="data:,">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg: #0a0a0f;
+  --bg-surface: #14141b;
+  --bg-hover: #1c1c26;
+  --bg-active: #22222e;
+  --border: #2a2a3a;
+  --border-light: #1e1e2e;
+  --text: #e4e4ed;
+  --text-muted: #7a7a8e;
+  --text-dim: #55556a;
+  --accent: #6366f1;
+  --accent-hover: #818cf8;
+  --accent-dim: rgba(99,102,241,0.15);
+  --danger: #ef4444;
+  --success: #22c55e;
+  --blue: #3b82f6;
+  --blue-dim: rgba(59,130,246,0.15);
+  --radius: 8px;
+  --radius-lg: 12px;
+  --font: 'Inter', -apple-system, system-ui, sans-serif;
+  --transition: 0.15s ease;
+}
+
+html.light {
+  --bg: #f5f5f7;
+  --bg-surface: #ffffff;
+  --bg-hover: #f0f0f2;
+  --bg-active: #e8e8ec;
+  --border: #d1d1d6;
+  --border-light: #e5e5ea;
+  --text: #1d1d1f;
+  --text-muted: #6e6e73;
+  --text-dim: #8e8e93;
+  --accent: #6366f1;
+  --accent-hover: #4f46e5;
+  --accent-dim: rgba(99,102,241,0.1);
+  --danger: #dc2626;
+  --success: #16a34a;
+  --blue: #2563eb;
+  --blue-dim: rgba(37,99,235,0.1);
+}
+
+html { background: var(--bg); }
+body {
+  font-family: var(--font);
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ── Navbar ─────────────────────────────────── */
+.navbar {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 10px 24px;
+  background: var(--bg-surface);
+  border-bottom: 1px solid var(--border-light);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  flex-wrap: wrap;
+}
+.nav-logo {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--text);
+  letter-spacing: -0.02em;
+  margin-right: 8px;
+  white-space: nowrap;
+}
+.nav-center { display: flex; align-items: center; gap: 2px; }
+.nav-right { display: flex; align-items: center; gap: 6px; margin-left: auto; flex-wrap: wrap; }
+
+/* ── Buttons ────────────────────────────────── */
+.btn-ghost {
+  background: transparent;
+  border: 1px solid transparent;
+  color: var(--text-muted);
+  padding: 5px 10px;
+  border-radius: var(--radius);
+  cursor: pointer;
+  font-size: 0.8rem;
+  font-family: var(--font);
+  font-weight: 500;
+  transition: all var(--transition);
+  white-space: nowrap;
+}
+.btn-ghost:hover { color: var(--text); background: var(--bg-hover); }
+.btn-ghost.active { color: var(--accent); background: var(--accent-dim); }
+
+.btn-primary {
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  padding: 6px 14px;
+  border-radius: var(--radius);
+  cursor: pointer;
+  font-size: 0.8rem;
+  font-family: var(--font);
+  font-weight: 600;
+  transition: background var(--transition);
+  white-space: nowrap;
+}
+.btn-primary:hover { background: var(--accent-hover); }
+
+.btn-sm {
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--text-muted);
+  padding: 3px 10px;
+  border-radius: var(--radius);
+  cursor: pointer;
+  font-size: 0.72rem;
+  font-family: var(--font);
+  font-weight: 500;
+  transition: all var(--transition);
+}
+.btn-sm:hover { color: var(--text); background: var(--bg-hover); }
+
+.view-tab {
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  padding: 5px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.8rem;
+  font-family: var(--font);
+  font-weight: 500;
+  transition: all var(--transition);
+}
+.view-tab:hover { color: var(--text); }
+.view-tab.active { background: var(--bg-hover); color: var(--text); }
+
+/* ── Period Nav ─────────────────────────────── */
+.period-nav {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  padding: 14px 24px 6px;
+}
+.period-label {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text);
+  min-width: 220px;
+  text-align: center;
+}
+.btn-nav {
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--text-muted);
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius);
+  cursor: pointer;
+  font-size: 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all var(--transition);
+}
+.btn-nav:hover { color: var(--text); background: var(--bg-hover); border-color: var(--border); }
+
+/* ── Content ────────────────────────────────── */
+.content {
+  flex: 1;
+  max-width: 1000px;
+  width: 100%;
+  margin: 0 auto;
+  padding: 12px 24px 24px;
+}
+
+/* ── Task Row ───────────────────────────────── */
+.task-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 9px 14px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius);
+  transition: background var(--transition);
+  margin-bottom: 4px;
+}
+.task-row:hover { background: var(--bg-hover); }
+.task-row.done { opacity: 0.55; }
+
+/* Type indicator dot */
+.type-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.type-dot.deadline { background: var(--danger); }
+.type-dot.reminder { background: var(--blue); }
+.type-dot.task { background: transparent; }
+.type-dot.payment { background: #f59e0b; }
+
+.checkbox-wrap {
+  flex-shrink: 0;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+}
+.checkbox {
+  width: 18px;
+  height: 18px;
+  border: 2px solid var(--border);
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all var(--transition);
+}
+.checkbox.checked {
+  background: var(--accent);
+  border-color: var(--accent);
+}
+.check-icon {
+  width: 12px;
+  height: 12px;
+  color: #fff;
+}
+
+.task-info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.task-title {
+  font-size: 0.88rem;
+  font-weight: 500;
+  color: var(--text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.task-title.line-through {
+  text-decoration: line-through;
+  color: var(--text-muted);
+}
+.task-title-edit, .task-notes-edit {
+  font-family: var(--font);
+  color: var(--text);
+  background: var(--bg);
+  border: 1px solid var(--accent);
+  border-radius: 4px;
+  padding: 1px 6px;
+  outline: none;
+  width: 100%;
+}
+.task-title-edit {
+  font-size: 0.88rem;
+  font-weight: 500;
+}
+.task-notes-edit {
+  font-size: 0.75rem;
+  font-weight: 400;
+  color: var(--text-dim);
+}
+.task-notes {
+  font-size: 0.75rem;
+  color: var(--text-dim);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.task-meta {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.7rem;
+  color: var(--text-dim);
+}
+
+.task-date {
+  font-size: 0.75rem;
+  color: var(--text-dim);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.recurrence-icon {
+  font-size: 0.75rem;
+  color: var(--text-dim);
+  flex-shrink: 0;
+  transition: color var(--transition);
+}
+.recurrence-icon:hover { color: var(--text-muted); }
+.recurrence-icon.weekly { color: var(--success); }
+.recurrence-icon.weekly:hover { color: #4ade80; }
+.recurrence-icon.monthly { color: var(--blue); }
+.recurrence-icon.monthly:hover { color: #60a5fa; }
+.recurrence-icon.yearly { color: #a855f7; }
+.recurrence-icon.yearly:hover { color: #c084fc; }
+
+.btn-delete {
+  background: transparent;
+  border: none;
+  color: var(--text-dim);
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: all var(--transition);
+  flex-shrink: 0;
+}
+.task-row:hover .btn-delete { opacity: 1; }
+.btn-delete:hover { color: var(--danger); background: rgba(239,68,68,0.1); }
+
+/* ── Subtasks ──────────────────────────────── */
+.subtask-toggle {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.7rem;
+  color: var(--text-dim);
+  cursor: pointer;
+  user-select: none;
+  margin-top: 2px;
+}
+.subtask-toggle:hover { color: var(--text-muted); }
+.subtask-section {
+  padding: 6px 0 4px 30px;
+}
+.subtask-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 3px 0;
+}
+.subtask-check {
+  width: 14px;
+  height: 14px;
+  border: 1.5px solid var(--border);
+  border-radius: 3px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: all var(--transition);
+}
+.subtask-check.checked {
+  background: var(--accent);
+  border-color: var(--accent);
+}
+.subtask-check .check-icon { width: 10px; height: 10px; }
+.subtask-title {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+}
+.subtask-title.done {
+  text-decoration: line-through;
+  color: var(--text-dim);
+}
+.subtask-title-edit {
+  font-family: var(--font);
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  background: var(--bg);
+  border: 1px solid var(--accent);
+  border-radius: 3px;
+  padding: 0 4px;
+  outline: none;
+  width: 100%;
+}
+.subtask-delete {
+  background: transparent;
+  border: none;
+  color: var(--text-dim);
+  cursor: pointer;
+  padding: 2px;
+  border-radius: 3px;
+  opacity: 0;
+  transition: all var(--transition);
+  display: flex;
+  align-items: center;
+}
+.subtask-row:hover .subtask-delete { opacity: 1; }
+.subtask-delete:hover { color: var(--danger); }
+
+.subtask-num {
+  font-size: 0.65rem;
+  font-weight: 600;
+  color: var(--text-dim);
+  min-width: 14px;
+  text-align: right;
+  flex-shrink: 0;
+}
+.drag-handle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  cursor: grab;
+  color: var(--text-dim);
+  opacity: 0;
+  transition: opacity var(--transition);
+  user-select: none;
+}
+.drag-handle:active { cursor: grabbing; }
+.task-row:hover .drag-handle,
+.subtask-row:hover .drag-handle { opacity: 0.5; }
+.drag-handle:hover { opacity: 1 !important; }
+.sortable-ghost .subtask-row {
+  background: var(--accent-dim);
+  border-radius: 4px;
+  opacity: 0.6;
+}
+
+.subtask-add {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 4px;
+}
+.subtask-add input {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 3px 8px;
+  color: var(--text);
+  font-size: 0.75rem;
+  font-family: var(--font);
+  outline: none;
+  flex: 1;
+}
+.subtask-add input:focus { border-color: var(--accent); }
+
+/* ── Priority Chip ──────────────────────────── */
+.priority-chip {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  flex-shrink: 0;
+  white-space: nowrap;
+  min-width: 28px;
+  text-align: center;
+}
+.priority-P0 { background: rgba(239,68,68,0.15); color: #ef4444; }
+.priority-P1 { background: rgba(245,158,11,0.15); color: #f59e0b; }
+.priority-P2 { background: rgba(99,102,241,0.15); color: #6366f1; }
+.priority-P3 { background: rgba(107,114,128,0.15); color: #6b7280; }
+.priority-chip.selected { outline: 2px solid currentColor; outline-offset: 1px; }
+
+/* ── Type Selector ─────────────────────────── */
+.type-selector {
+  display: flex;
+  gap: 6px;
+}
+.type-chip {
+  display: inline-block;
+  padding: 4px 12px;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all var(--transition);
+  border: 1px solid transparent;
+}
+.type-chip.type-task {
+  background: rgba(107,114,128,0.15);
+  color: #9ca3af;
+}
+.type-chip.type-deadline {
+  background: rgba(239,68,68,0.1);
+  color: #f87171;
+}
+.type-chip.type-reminder {
+  background: var(--blue-dim);
+  color: #60a5fa;
+}
+.type-chip.type-payment {
+  background: rgba(245,158,11,0.15);
+  color: #f59e0b;
+}
+.type-chip.selected {
+  outline: 2px solid currentColor;
+  outline-offset: 1px;
+}
+
+/* ── Recurrence selector ───────────────────── */
+.form-select {
+  width: 100%;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 9px 12px;
+  color: var(--text);
+  font-size: 0.88rem;
+  font-family: var(--font);
+  outline: none;
+  transition: border-color var(--transition);
+  appearance: auto;
+}
+.form-select:focus { border-color: var(--accent); }
+.recurrence-hint {
+  font-size: 0.72rem;
+  color: var(--text-dim);
+  margin-top: 4px;
+}
+
+/* ── Calendar Grid ──────────────────────────── */
+.calendar {
+  margin-bottom: 20px;
+}
+.cal-header, .cal-week {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 4px;
+}
+.cal-header { margin-bottom: 4px; }
+.cal-head {
+  text-align: center;
+  color: var(--text-dim);
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 4px 0;
+}
+.cal-week { margin-bottom: 4px; }
+.cal-cell {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius);
+  min-height: 68px;
+  padding: 6px 8px;
+  cursor: pointer;
+  transition: all var(--transition);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+.cal-cell:hover { background: var(--bg-hover); border-color: var(--border); }
+.cal-cell.empty {
+  background: transparent;
+  border-color: transparent;
+  cursor: default;
+}
+.cal-cell.empty:hover { background: transparent; }
+.cal-cell.today {
+  border-color: var(--accent);
+  border-width: 2px;
+}
+.cal-cell.has-tasks { background: var(--bg-hover); }
+.cal-cell.selected {
+  border-color: var(--accent);
+  border-width: 2px;
+  background: var(--accent-dim);
+}
+.cal-day-num {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--text);
+}
+.cal-meta {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin-top: 4px;
+}
+.cal-dots {
+  display: flex;
+  gap: 2px;
+  align-items: center;
+}
+.cal-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.cal-dot.deadline-dot {
+  border: 2px solid var(--danger);
+  background: transparent;
+}
+.cal-dot.reminder-dot {
+  border: 2px solid var(--blue);
+  background: transparent;
+}
+.cal-recurrence-icon {
+  font-size: 0.55rem;
+  color: var(--text-dim);
+}
+.cal-count {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
+/* ── Year View Month Cards ──────────────────── */
+.month-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 16px;
+}
+.month-card {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-lg);
+  padding: 16px;
+}
+.month-card-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+.month-card-name {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--text);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+.month-card-count {
+  font-size: 0.75rem;
+  color: var(--text-dim);
+}
+
+/* ── Day Headers ────────────────────────────── */
+.day-label {
+  color: var(--text-muted);
+  font-size: 0.78rem;
+  font-weight: 600;
+  margin: 12px 0 6px;
+}
+.day-label:first-child { margin-top: 0; }
+
+.section-header {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text);
+  margin-bottom: 10px;
+}
+.section-count {
+  color: var(--text-dim);
+  font-weight: 400;
+  margin-left: 6px;
+  font-size: 0.8rem;
+}
+
+/* ── Empty State ────────────────────────────── */
+.empty-state {
+  text-align: center;
+  color: var(--text-dim);
+  font-size: 0.88rem;
+  padding: 48px 0;
+}
+
+/* ── Modal ──────────────────────────────────── */
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.6);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 200;
+}
+.modal {
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 24px;
+  width: 100%;
+  max-width: 420px;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+.modal-title {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text);
+  margin-bottom: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.modal-close {
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  font-size: 1.2rem;
+  padding: 4px;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color var(--transition);
+}
+.modal-close:hover { color: var(--text); }
+
+.form-group { margin-bottom: 14px; }
+.form-label {
+  display: block;
+  font-size: 0.78rem;
+  font-weight: 500;
+  color: var(--text-muted);
+  margin-bottom: 5px;
+}
+.form-input {
+  width: 100%;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 9px 12px;
+  color: var(--text);
+  font-size: 0.88rem;
+  font-family: var(--font);
+  outline: none;
+  transition: border-color var(--transition);
+}
+.form-input:focus { border-color: var(--accent); }
+.form-input::placeholder { color: var(--text-dim); }
+/* Fix date input calendar icon color for dark mode */
+input[type="date"]::-webkit-calendar-picker-indicator {
+  filter: invert(0.7);
+}
+html.light input[type="date"]::-webkit-calendar-picker-indicator {
+  filter: none;
+}
+
+/* ── Theme Toggle ──────────────────────────── */
+.theme-toggle {
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--text-muted);
+  width: 30px;
+  height: 30px;
+  border-radius: var(--radius);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.9rem;
+  transition: all var(--transition);
+  flex-shrink: 0;
+}
+.theme-toggle:hover { color: var(--text); background: var(--bg-hover); }
+
+.priority-selector {
+  display: flex;
+  gap: 6px;
+}
+.priority-selector .priority-chip {
+  cursor: pointer;
+  padding: 4px 12px;
+  font-size: 0.75rem;
+  transition: all var(--transition);
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 20px;
+}
+
+/* ── Projects ──────────────────────────────── */
+.project-card {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-lg);
+  padding: 18px;
+  margin-bottom: 12px;
+}
+.project-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+.project-name {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--text);
+}
+.status-badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 0.65rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+  transition: all var(--transition);
+}
+.status-active { background: rgba(34,197,94,0.15); color: #22c55e; }
+.status-paused { background: rgba(245,158,11,0.15); color: #f59e0b; }
+.status-completed { background: rgba(107,114,128,0.15); color: #6b7280; }
+.project-desc {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  margin-bottom: 4px;
+}
+.project-repo {
+  font-size: 0.75rem;
+  margin-bottom: 10px;
+}
+.project-repo a {
+  color: var(--accent);
+  text-decoration: none;
+}
+.project-repo a:hover { text-decoration: underline; }
+.project-entries {
+  border-top: 1px solid var(--border-light);
+  padding-top: 10px;
+}
+.entry-row {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  padding: 3px 0;
+  font-size: 0.78rem;
+}
+.entry-date {
+  color: var(--text-dim);
+  flex-shrink: 0;
+  font-weight: 500;
+  min-width: 50px;
+}
+.entry-summary {
+  color: var(--text-muted);
+  flex: 1;
+}
+.entry-delete {
+  background: transparent;
+  border: none;
+  color: var(--text-dim);
+  cursor: pointer;
+  padding: 2px;
+  font-size: 0.7rem;
+  opacity: 0;
+  transition: all var(--transition);
+}
+.entry-row:hover .entry-delete { opacity: 1; }
+.entry-delete:hover { color: var(--danger); }
+
+.entry-add-form {
+  display: flex;
+  gap: 6px;
+  margin-top: 8px;
+  align-items: center;
+}
+.entry-add-form input {
+  flex: 1;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 5px 8px;
+  color: var(--text);
+  font-size: 0.78rem;
+  font-family: var(--font);
+  outline: none;
+}
+.entry-add-form input:focus { border-color: var(--accent); }
+
+.project-delete {
+  background: transparent;
+  border: none;
+  color: var(--text-dim);
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 4px;
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  opacity: 0;
+  transition: all var(--transition);
+}
+.project-card:hover .project-delete { opacity: 1; }
+.project-delete:hover { color: var(--danger); }
+
+/* ── Collapsible Panel (shared by Backlog & Payments) ── */
+.collapsible-panel {
+  border-top: 1px solid var(--border-light);
+  margin-top: 16px;
+  padding-top: 12px;
+}
+.collapsible-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  user-select: none;
+  margin-bottom: 8px;
+}
+.collapsible-header:hover .collapsible-title { color: var(--text); }
+.collapsible-title {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  transition: color var(--transition);
+}
+.collapsible-count {
+  font-size: 0.72rem;
+  color: var(--text-dim);
+}
+.collapsible-arrow {
+  font-size: 0.7rem;
+  color: var(--text-dim);
+}
+.payment-month-group {
+  margin-bottom: 12px;
+}
+.payment-month-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 4px 0;
+  margin-bottom: 4px;
+}
+.payment-month-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+.payment-month-total {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #f59e0b;
+}
+.payment-amount {
+  font-size: 0.72rem;
+  font-weight: 500;
+  color: #f59e0b;
+  white-space: nowrap;
+  margin-left: auto;
+  margin-right: 8px;
+}
+
+/* ── Sortable drag ghost ────────────────────── */
+.sortable-ghost .task-row {
+  background: var(--accent-dim);
+  border-color: var(--accent);
+  opacity: 0.6;
+}
+
+/* ── Toast ──────────────────────────────────── */
+.toast {
+  position: fixed;
+  top: 16px;
+  right: 16px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 10px 18px;
+  color: var(--text);
+  font-size: 0.82rem;
+  z-index: 300;
+  opacity: 0;
+  transform: translateY(-10px);
+  transition: all 0.3s ease;
+  pointer-events: none;
+}
+.toast.visible {
+  opacity: 1;
+  transform: translateY(0);
+  pointer-events: auto;
+}
+.toast.error {
+  border-color: var(--danger);
+  color: var(--danger);
+}
+.toast-undo {
+  background: transparent;
+  border: 1px solid var(--accent);
+  color: var(--accent);
+  font-family: var(--font);
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 4px;
+  cursor: pointer;
+  margin-left: 10px;
+  transition: all var(--transition);
+}
+.toast-undo:hover { background: var(--accent-dim); }
+.overdue-badge {
+  background: var(--danger);
+  color: #fff;
+  font-size: 0.6rem;
+  font-weight: 700;
+  border-radius: 8px;
+  padding: 0 5px;
+  min-width: 16px;
+  text-align: center;
+  line-height: 16px;
+  display: inline-block;
+  margin-left: 2px;
+  vertical-align: top;
+}
+.search-input {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--text);
+  font-family: var(--font);
+  font-size: 0.8rem;
+  padding: 4px 10px;
+  outline: none;
+  width: 160px;
+  transition: border-color var(--transition);
+}
+.search-input:focus { border-color: var(--accent); }
+.search-input::placeholder { color: var(--text-dim); }
+
+/* ── Scrollbar ──────────────────────────────── */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--text-dim); }
+</style>
+</head>
+<body>
+
+<div x-data="todoApp()" x-init="init()" @keydown.window="handleKeydown($event)">
+
+  <!-- Toast -->
+  <div class="toast" :class="{ visible: toastVisible, error: toastType === 'error' }">
+    <span x-text="toastMessage"></span>
+    <button x-show="_deletedTask" class="toast-undo" @click="undoDelete()">Undo</button>
+  </div>
+
+  <!-- Navbar -->
+  <nav class="navbar">
+    <span class="nav-logo">Todo</span>
+    <div class="nav-center">
+      <button class="view-tab" :class="{ active: view === 'all' }" @click="switchView('all')">All<span class="overdue-badge" x-show="overdueCount() > 0" x-text="overdueCount()"></span></button>
+      <button class="view-tab" :class="{ active: view === 'year' }" @click="switchView('year')">Year</button>
+      <button class="view-tab" :class="{ active: view === 'month' }" @click="switchView('month')">Month</button>
+      <button class="view-tab" :class="{ active: view === 'day' }" @click="switchView('day')">Day</button>
+      <button class="view-tab" :class="{ active: view === 'backlog' }" @click="switchView('backlog')">Backlog</button>
+      <button class="view-tab" :class="{ active: view === 'payments' }" @click="switchView('payments')">Payments</button>
+      <button class="view-tab" :class="{ active: view === 'projects' }" @click="switchView('projects')">Projects</button>
+    </div>
+    <div class="nav-right">
+      <input class="search-input" type="text" placeholder="Search..." x-model="searchQuery" x-ref="searchInput" @keydown.escape="searchQuery = ''; $el.blur()">
+      <template x-if="!isListView()">
+        <button class="btn-ghost" @click="goToday()">Today</button>
+      </template>
+      <button class="btn-ghost" @click="reloadFromDisk()" title="Reload from disk">&#x27f3;</button>
+      <template x-if="view !== 'projects'">
+        <button class="btn-ghost" :class="{ active: showDone }" @click="showDone = !showDone"
+                x-text="showDone ? 'Hide done' : 'Show done'"></button>
+      </template>
+      <template x-if="view !== 'projects'">
+        <button class="btn-ghost" @click="clearDone()" title="Clear completed">Clear done</button>
+      </template>
+      <button class="btn-ghost" @click="adjustFontSize(-10)" title="Decrease font size" style="font-size:0.75rem;padding:5px 6px">A&#8722;</button>
+      <button class="btn-ghost" @click="adjustFontSize(10)" title="Increase font size" style="font-size:0.75rem;padding:5px 6px">A+</button>
+      <button class="btn-ghost" @click="togglePriorityMode()" :title="priorityMode === 'priority' ? 'Switch to Eisenhower matrix' : 'Switch to P0–P3 priorities'" x-text="priorityMode === 'priority' ? 'P0–P3' : 'Eisenhower'"></button>
+      <button class="theme-toggle" @click="toggleTheme()" :title="darkMode ? 'Switch to light mode' : 'Switch to dark mode'" x-text="darkMode ? '&#9788;' : '&#9790;'"></button>
+      <button class="btn-primary" @click="view === 'projects' ? openProjectModal() : openAddModal()"
+              x-text="view === 'projects' ? '+ Project' : '+ Add'"></button>
+    </div>
+  </nav>
+
+  <!-- Period Navigation (hidden on projects view) -->
+  <div class="period-nav" x-show="!isListView()">
+    <button class="btn-nav" @click="prevPeriod()">&#8249;</button>
+    <span class="period-label" x-text="getPeriodLabel()"></span>
+    <button class="btn-nav" @click="nextPeriod()">&#8250;</button>
+  </div>
+
+  <!-- Main Content -->
+  <main class="content">
+
+    <!-- All View -->
+    <template x-if="view === 'all'">
+      <div>
+        <div class="section-header">
+          All Tasks<span class="section-count" x-text="allTasks().length + ' items'"></span>
+        </div>
+        <template x-for="group in groupByDay(allTasks())" :key="group.date">
+          <div>
+            <div class="day-label" x-text="formatDayHeaderLong(group.date)"></div>
+            <template x-for="task in group.tasks" :key="task.id">
+              <div>
+                <div class="task-row" :class="{ done: task.done }">
+                  <span class="type-dot" :class="task.type || 'task'"></span>
+                  <div class="checkbox-wrap" @click="toggleDone(task)">
+                    <div class="checkbox" :class="{ checked: task.done }">
+                      <svg x-show="task.done" class="check-icon" viewBox="0 0 12 12"><path d="M2.5 6l2.5 2.5 4.5-4.5" stroke="currentColor" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                    </div>
+                  </div>
+                  <div class="task-info">
+                    <span class="task-title" :class="{ 'line-through': task.done }" x-text="task.title" x-show="editingTaskId !== task.id" @click="startEditTitle(task)" style="cursor:text"></span>
+                    <input x-show="editingTaskId === task.id" class="task-title-edit" type="text" :value="task.title" @blur="saveTitle(task, $event)" @keydown.enter="$event.target.blur()" @keydown.escape="editingTaskId = null" x-effect="if (editingTaskId === task.id) $nextTick(() => $el.focus())">
+                    <span class="task-notes" x-show="task.notes && editingNotesId !== task.id" x-text="task.notes" @click="startEditNotes(task)" style="cursor:text"></span>
+                    <input x-show="editingNotesId === task.id" class="task-notes-edit" type="text" :value="task.notes || ''" placeholder="Add notes..." @blur="saveNotes(task, $event)" @keydown.enter="$event.target.blur()" @keydown.escape="editingNotesId = null" x-effect="if (editingNotesId === task.id) $nextTick(() => $el.focus())">
+                    <div class="task-meta" x-show="task.subtasks && task.subtasks.length > 0">
+                      <span class="subtask-toggle" @click.stop="toggleSubtaskExpand(task.id)"
+                            x-text="(expandedSubtasks[task.id] ? '&#9662;' : '&#9656;') + ' Subtasks ' + subtaskProgress(task)">
+                      </span>
+                    </div>
+                  </div>
+                  <span class="recurrence-icon" :class="task.recurrence ? task.recurrence.type : ''" :title="task.recurrence ? recurrenceLabel(task) : 'Click to make recurring'" @click="cycleRecurrence(task)" style="cursor:pointer">&#x21bb;</span>
+                  <span class="priority-chip" :class="'priority-' + task.priority" x-text="priorityLabel(task.priority)" @wheel.prevent="scrollPriority(task, $event)" :title="priorityTooltip(task.priority)" style="cursor:ns-resize"></span>
+                  <span class="task-date" x-text="shortDate(task.date)"></span>
+                  <button class="btn-delete" @click="deleteTask(task.id)" title="Delete">
+                    <svg viewBox="0 0 16 16" width="14" height="14"><path d="M4 4l8 8M12 4l-8 8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+                  </button>
+                </div>
+                <div class="subtask-section" x-show="expandedSubtasks[task.id] && task.subtasks && task.subtasks.length > 0" x-effect="if (expandedSubtasks[task.id]) $nextTick(() => initSubtaskSortable($el, task.id))">
+                  <template x-for="(sub, si) in task.subtasks" :key="sub.id">
+                    <div class="subtask-row" :data-sub-id="sub.id">
+                      <span class="drag-handle"><svg viewBox="0 0 8 12" width="8" height="12"><circle cx="2.5" cy="2" r="1" fill="currentColor"/><circle cx="5.5" cy="2" r="1" fill="currentColor"/><circle cx="2.5" cy="6" r="1" fill="currentColor"/><circle cx="5.5" cy="6" r="1" fill="currentColor"/><circle cx="2.5" cy="10" r="1" fill="currentColor"/><circle cx="5.5" cy="10" r="1" fill="currentColor"/></svg></span>
+                      <span class="subtask-num" x-text="si + 1"></span>
+                      <div class="subtask-check" :class="{ checked: sub.done }" @click="toggleSubtask(task.id, sub)">
+                        <svg x-show="sub.done" class="check-icon" viewBox="0 0 12 12"><path d="M2.5 6l2.5 2.5 4.5-4.5" stroke="currentColor" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                      </div>
+                      <span class="subtask-title" :class="{ done: sub.done }" x-text="sub.title" x-show="editingSubtaskId !== sub.id" @click="startEditSubtitle(sub)" style="cursor:text"></span>
+                      <input x-show="editingSubtaskId === sub.id" class="subtask-title-edit" type="text" :value="sub.title" @blur="saveSubtitle(task.id, sub, $event)" @keydown.enter="$event.target.blur()" @keydown.escape="editingSubtaskId = null" x-effect="if (editingSubtaskId === sub.id) $nextTick(() => $el.focus())">
+                      <button class="subtask-delete" @click="deleteSubtask(task.id, sub.id)">
+                        <svg viewBox="0 0 16 16" width="10" height="10"><path d="M4 4l8 8M12 4l-8 8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+                      </button>
+                    </div>
+                  </template>
+                  <div class="subtask-add">
+                    <input type="text" placeholder="Add subtask..." @keydown.enter="addSubtask(task.id, $event)" @keydown.escape.stop="$event.target.blur()">
+                  </div>
+                </div>
+              </div>
+            </template>
+          </div>
+        </template>
+        <div class="empty-state" x-show="allTasks().length === 0">No tasks.</div>
+      </div>
+    </template>
+
+    <!-- Backlog View -->
+    <template x-if="view === 'backlog'">
+      <div>
+        <div class="section-header">
+          Backlog<span class="section-count" x-text="backlogTasks().length + ' items'"></span>
+        </div>
+        <div x-ref="backlogViewList" x-effect="initBacklogViewSortable()">
+          <template x-for="task in backlogTasks()" :key="task.id">
+            <div :data-id="task.id">
+              <div class="task-row" :class="{ done: task.done }">
+                <span class="drag-handle"><svg viewBox="0 0 10 16" width="10" height="16"><circle cx="3" cy="3" r="1.2" fill="currentColor"/><circle cx="7" cy="3" r="1.2" fill="currentColor"/><circle cx="3" cy="8" r="1.2" fill="currentColor"/><circle cx="7" cy="8" r="1.2" fill="currentColor"/><circle cx="3" cy="13" r="1.2" fill="currentColor"/><circle cx="7" cy="13" r="1.2" fill="currentColor"/></svg></span>
+                <span class="type-dot task"></span>
+                <div class="checkbox-wrap" @click="toggleDone(task)">
+                  <div class="checkbox" :class="{ checked: task.done }">
+                    <svg x-show="task.done" class="check-icon" viewBox="0 0 12 12"><path d="M2.5 6l2.5 2.5 4.5-4.5" stroke="currentColor" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                  </div>
+                </div>
+                <div class="task-info">
+                  <span class="task-title" :class="{ 'line-through': task.done }" x-text="task.title" x-show="editingTaskId !== task.id" @click="startEditTitle(task)" style="cursor:text"></span>
+                  <input x-show="editingTaskId === task.id" class="task-title-edit" type="text" :value="task.title" @blur="saveTitle(task, $event)" @keydown.enter="$event.target.blur()" @keydown.escape="editingTaskId = null" x-effect="if (editingTaskId === task.id) $nextTick(() => $el.focus())">
+                  <span class="task-notes" x-show="task.notes && editingNotesId !== task.id" x-text="task.notes" @click="startEditNotes(task)" style="cursor:text"></span>
+                  <input x-show="editingNotesId === task.id" class="task-notes-edit" type="text" :value="task.notes || ''" placeholder="Add notes..." @blur="saveNotes(task, $event)" @keydown.enter="$event.target.blur()" @keydown.escape="editingNotesId = null" x-effect="if (editingNotesId === task.id) $nextTick(() => $el.focus())">
+                  <div class="task-meta" x-show="task.subtasks && task.subtasks.length > 0">
+                    <span class="subtask-toggle" @click.stop="toggleSubtaskExpand(task.id)"
+                          x-text="(expandedSubtasks[task.id] ? '&#9662;' : '&#9656;') + ' Subtasks ' + subtaskProgress(task)">
+                    </span>
+                  </div>
+                </div>
+                <span class="priority-chip priority-P3" x-text="priorityLabel('P3')"></span>
+                <button class="btn-delete" @click="deleteTask(task.id)" title="Delete">
+                  <svg viewBox="0 0 16 16" width="14" height="14"><path d="M4 4l8 8M12 4l-8 8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+                </button>
+              </div>
+              <div class="subtask-section" x-show="expandedSubtasks[task.id] && task.subtasks && task.subtasks.length > 0" x-effect="if (expandedSubtasks[task.id]) $nextTick(() => initSubtaskSortable($el, task.id))">
+                <template x-for="(sub, si) in task.subtasks" :key="sub.id">
+                  <div class="subtask-row" :data-sub-id="sub.id">
+                    <span class="drag-handle"><svg viewBox="0 0 8 12" width="8" height="12"><circle cx="2.5" cy="2" r="1" fill="currentColor"/><circle cx="5.5" cy="2" r="1" fill="currentColor"/><circle cx="2.5" cy="6" r="1" fill="currentColor"/><circle cx="5.5" cy="6" r="1" fill="currentColor"/><circle cx="2.5" cy="10" r="1" fill="currentColor"/><circle cx="5.5" cy="10" r="1" fill="currentColor"/></svg></span>
+                    <span class="subtask-num" x-text="si + 1"></span>
+                    <div class="subtask-check" :class="{ checked: sub.done }" @click="toggleSubtask(task.id, sub)">
+                      <svg x-show="sub.done" class="check-icon" viewBox="0 0 12 12"><path d="M2.5 6l2.5 2.5 4.5-4.5" stroke="currentColor" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                    </div>
+                    <span class="subtask-title" :class="{ done: sub.done }" x-text="sub.title" x-show="editingSubtaskId !== sub.id" @click="startEditSubtitle(sub)" style="cursor:text"></span>
+                    <input x-show="editingSubtaskId === sub.id" class="subtask-title-edit" type="text" :value="sub.title" @blur="saveSubtitle(task.id, sub, $event)" @keydown.enter="$event.target.blur()" @keydown.escape="editingSubtaskId = null" x-effect="if (editingSubtaskId === sub.id) $nextTick(() => $el.focus())">
+                    <button class="subtask-delete" @click="deleteSubtask(task.id, sub.id)">
+                      <svg viewBox="0 0 16 16" width="10" height="10"><path d="M4 4l8 8M12 4l-8 8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+                    </button>
+                  </div>
+                </template>
+                <div class="subtask-add">
+                  <input type="text" placeholder="Add subtask..." @keydown.enter="addSubtask(task.id, $event)" @keydown.escape.stop="$event.target.blur()">
+                </div>
+              </div>
+            </div>
+          </template>
+        </div>
+        <div class="empty-state" x-show="backlogTasks().length === 0">No backlog items. P3 tasks appear here.</div>
+      </div>
+    </template>
+
+    <!-- Payments View -->
+    <template x-if="view === 'payments'">
+      <div>
+        <div class="section-header">
+          Payments<span class="section-count" x-text="paymentTasks().length + ' items'"></span>
+        </div>
+        <template x-for="group in paymentsByMonth()" :key="group.key">
+          <div class="payment-month-group">
+            <div class="payment-month-header">
+              <span class="payment-month-label" x-text="group.label"></span>
+              <span class="payment-month-total" x-show="group.total > 0" x-text="'$' + group.total.toFixed(2)"></span>
+            </div>
+            <template x-for="task in group.tasks" :key="task.id">
+              <div>
+                <div class="task-row" :class="{ done: task.done }">
+                  <span class="type-dot payment"></span>
+                  <div class="checkbox-wrap" @click="toggleDone(task)">
+                    <div class="checkbox" :class="{ checked: task.done }">
+                      <svg x-show="task.done" class="check-icon" viewBox="0 0 12 12"><path d="M2.5 6l2.5 2.5 4.5-4.5" stroke="currentColor" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                    </div>
+                  </div>
+                  <div class="task-info">
+                    <span class="task-title" :class="{ 'line-through': task.done }" x-text="task.title" x-show="editingTaskId !== task.id" @click="startEditTitle(task)" style="cursor:text"></span>
+                    <input x-show="editingTaskId === task.id" class="task-title-edit" type="text" :value="task.title" @blur="saveTitle(task, $event)" @keydown.enter="$event.target.blur()" @keydown.escape="editingTaskId = null" x-effect="if (editingTaskId === task.id) $nextTick(() => $el.focus())">
+                    <span class="task-notes" x-show="task.notes && editingNotesId !== task.id" x-text="task.notes" @click="startEditNotes(task)" style="cursor:text"></span>
+                    <input x-show="editingNotesId === task.id" class="task-notes-edit" type="text" :value="task.notes || ''" placeholder="Add notes..." @blur="saveNotes(task, $event)" @keydown.enter="$event.target.blur()" @keydown.escape="editingNotesId = null" x-effect="if (editingNotesId === task.id) $nextTick(() => $el.focus())">
+                    <div class="task-meta">
+                      <span x-text="task.date"></span>
+                      <span class="recurrence-icon" :class="task.recurrence ? task.recurrence.type : ''" :title="task.recurrence ? recurrenceLabel(task) : 'Click to make recurring'" @click="cycleRecurrence(task)" style="cursor:pointer">&#x21bb;</span>
+                    </div>
+                  </div>
+                  <span class="payment-amount" x-show="task.amount" x-text="'$' + task.amount"></span>
+                  <button class="btn-delete" @click="deleteTask(task.id)" title="Delete">
+                    <svg viewBox="0 0 16 16" width="14" height="14"><path d="M4 4l8 8M12 4l-8 8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+                  </button>
+                </div>
+              </div>
+            </template>
+          </div>
+        </template>
+        <div class="empty-state" x-show="paymentTasks().length === 0">No payments. Add a task with type "Payment" to track bills.</div>
+      </div>
+    </template>
+
+    <!-- Year View -->
+    <template x-if="view === 'year'">
+      <div>
+        <div class="month-grid" x-show="monthsWithTasks(year).length > 0">
+          <template x-for="m in monthsWithTasks(year)" :key="m.index">
+            <div class="month-card">
+              <div class="month-card-header">
+                <span class="month-card-name" x-text="monthNameShort(m.index)"></span>
+                <span class="month-card-count" x-text="m.tasks.length + (m.tasks.length === 1 ? ' task' : ' tasks')"></span>
+              </div>
+              <template x-for="group in groupByDay(m.tasks)" :key="group.date">
+                <div>
+                  <div class="day-label" x-text="formatDayHeader(group.date)"></div>
+                  <template x-for="task in group.tasks" :key="task.id">
+                    <div>
+                      <div class="task-row" :class="{ done: task.done }">
+                        <span class="type-dot" :class="task.type || 'task'"></span>
+                        <div class="checkbox-wrap" @click="toggleDone(task)">
+                          <div class="checkbox" :class="{ checked: task.done }">
+                            <svg x-show="task.done" class="check-icon" viewBox="0 0 12 12"><path d="M2.5 6l2.5 2.5 4.5-4.5" stroke="currentColor" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                          </div>
+                        </div>
+                        <div class="task-info">
+                          <span class="task-title" :class="{ 'line-through': task.done }" x-text="task.title" x-show="editingTaskId !== task.id" @click="startEditTitle(task)" style="cursor:text"></span>
+                        <input x-show="editingTaskId === task.id" class="task-title-edit" type="text" :value="task.title" @blur="saveTitle(task, $event)" @keydown.enter="$event.target.blur()" @keydown.escape="editingTaskId = null" x-effect="if (editingTaskId === task.id) $nextTick(() => $el.focus())">
+                          <span class="task-notes" x-show="task.notes && editingNotesId !== task.id" x-text="task.notes" @click="startEditNotes(task)" style="cursor:text"></span>
+                        <input x-show="editingNotesId === task.id" class="task-notes-edit" type="text" :value="task.notes || ''" placeholder="Add notes..." @blur="saveNotes(task, $event)" @keydown.enter="$event.target.blur()" @keydown.escape="editingNotesId = null" x-effect="if (editingNotesId === task.id) $nextTick(() => $el.focus())">
+                          <div class="task-meta" x-show="task.subtasks && task.subtasks.length > 0">
+                            <span class="subtask-toggle" @click.stop="toggleSubtaskExpand(task.id)"
+                                  x-text="(expandedSubtasks[task.id] ? '&#9662;' : '&#9656;') + ' Subtasks ' + subtaskProgress(task)">
+                            </span>
+                          </div>
+                        </div>
+                        <span class="recurrence-icon" :class="task.recurrence ? task.recurrence.type : ''" :title="task.recurrence ? recurrenceLabel(task) : 'Click to make recurring'" @click="cycleRecurrence(task)" style="cursor:pointer">&#x21bb;</span>
+                        <span class="priority-chip" :class="'priority-' + task.priority" x-text="priorityLabel(task.priority)" @wheel.prevent="scrollPriority(task, $event)" :title="priorityTooltip(task.priority)" style="cursor:ns-resize"></span>
+                        <button class="btn-delete" @click="deleteTask(task.id)" title="Delete">
+                          <svg viewBox="0 0 16 16" width="14" height="14"><path d="M4 4l8 8M12 4l-8 8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+                        </button>
+                      </div>
+                      <!-- Subtasks expanded -->
+                      <div class="subtask-section" x-show="expandedSubtasks[task.id] && task.subtasks && task.subtasks.length > 0" x-effect="if (expandedSubtasks[task.id]) $nextTick(() => initSubtaskSortable($el, task.id))">
+                        <template x-for="(sub, si) in task.subtasks" :key="sub.id">
+                          <div class="subtask-row" :data-sub-id="sub.id">
+                            <span class="drag-handle"><svg viewBox="0 0 8 12" width="8" height="12"><circle cx="2.5" cy="2" r="1" fill="currentColor"/><circle cx="5.5" cy="2" r="1" fill="currentColor"/><circle cx="2.5" cy="6" r="1" fill="currentColor"/><circle cx="5.5" cy="6" r="1" fill="currentColor"/><circle cx="2.5" cy="10" r="1" fill="currentColor"/><circle cx="5.5" cy="10" r="1" fill="currentColor"/></svg></span>
+                            <span class="subtask-num" x-text="si + 1"></span>
+                            <div class="subtask-check" :class="{ checked: sub.done }" @click="toggleSubtask(task.id, sub)">
+                              <svg x-show="sub.done" class="check-icon" viewBox="0 0 12 12"><path d="M2.5 6l2.5 2.5 4.5-4.5" stroke="currentColor" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                            </div>
+                            <span class="subtask-title" :class="{ done: sub.done }" x-text="sub.title" x-show="editingSubtaskId !== sub.id" @click="startEditSubtitle(sub)" style="cursor:text"></span>
+                      <input x-show="editingSubtaskId === sub.id" class="subtask-title-edit" type="text" :value="sub.title" @blur="saveSubtitle(task.id, sub, $event)" @keydown.enter="$event.target.blur()" @keydown.escape="editingSubtaskId = null" x-effect="if (editingSubtaskId === sub.id) $nextTick(() => $el.focus())">
+                            <button class="subtask-delete" @click="deleteSubtask(task.id, sub.id)">
+                              <svg viewBox="0 0 16 16" width="10" height="10"><path d="M4 4l8 8M12 4l-8 8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+                            </button>
+                          </div>
+                        </template>
+                        <div class="subtask-add">
+                          <input type="text" placeholder="Add subtask..." @keydown.enter="addSubtask(task.id, $event)" @keydown.escape.stop="$event.target.blur()">
+                        </div>
+                      </div>
+                    </div>
+                  </template>
+                </div>
+              </template>
+            </div>
+          </template>
+        </div>
+        <div class="empty-state" x-show="monthsWithTasks(year).length === 0">No tasks for this year.</div>
+      </div>
+    </template>
+
+    <!-- Month View -->
+    <template x-if="view === 'month'">
+      <div>
+        <!-- Calendar Grid -->
+        <div class="calendar">
+          <div class="cal-header">
+            <template x-for="d in ['Mon','Tue','Wed','Thu','Fri','Sat','Sun']" :key="d">
+              <div class="cal-head" x-text="d"></div>
+            </template>
+          </div>
+          <template x-for="(week, wi) in getCalendarData(year, month)" :key="wi">
+            <div class="cal-week">
+              <template x-for="(cell, ci) in week" :key="ci">
+                <div class="cal-cell"
+                     :class="{ empty: !cell.day, today: cell.isToday, 'has-tasks': cell.count > 0, selected: cell.dateStr === selectedCalDay }"
+                     @click="cell.day && selectCalDay(year, month, cell.day)">
+                  <span class="cal-day-num" x-show="cell.day" x-text="cell.day"></span>
+                  <div class="cal-meta" x-show="cell.day && cell.count > 0">
+                    <div class="cal-dots">
+                      <span class="cal-dot deadline-dot" x-show="cell.hasDeadline"></span>
+                      <span class="cal-dot reminder-dot" x-show="cell.hasReminder"></span>
+                      <span class="cal-dot" x-show="!cell.hasDeadline && !cell.hasReminder"
+                            :style="cell.topPriority ? 'background:' + priorityColor(cell.topPriority) : ''"></span>
+                      <span class="cal-recurrence-icon" x-show="cell.hasRecurring">&#x21bb;</span>
+                    </div>
+                    <span class="cal-count" x-text="cell.remaining + ' left'"></span>
+                  </div>
+                </div>
+              </template>
+            </div>
+          </template>
+        </div>
+
+        <!-- Task List Below Calendar -->
+        <div x-show="selectedCalDay" style="display:flex; align-items:center; justify-content:space-between; margin-bottom:6px; margin-top:4px;">
+          <span class="section-header" style="margin-bottom:0" x-text="formatDayHeaderLong(selectedCalDay)"></span>
+          <button class="btn-ghost" @click="selectedCalDay = null" style="font-size:0.72rem">Show all</button>
+        </div>
+        <template x-for="group in groupByDay(monthViewTasks())" :key="group.date">
+          <div>
+            <div class="day-label" x-show="!selectedCalDay" x-text="formatDayHeaderLong(group.date)"></div>
+            <template x-for="task in group.tasks" :key="task.id">
+              <div>
+                <div class="task-row" :class="{ done: task.done }">
+                  <span class="type-dot" :class="task.type || 'task'"></span>
+                  <div class="checkbox-wrap" @click="toggleDone(task)">
+                    <div class="checkbox" :class="{ checked: task.done }">
+                      <svg x-show="task.done" class="check-icon" viewBox="0 0 12 12"><path d="M2.5 6l2.5 2.5 4.5-4.5" stroke="currentColor" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                    </div>
+                  </div>
+                  <div class="task-info">
+                    <span class="task-title" :class="{ 'line-through': task.done }" x-text="task.title" x-show="editingTaskId !== task.id" @click="startEditTitle(task)" style="cursor:text"></span>
+                    <input x-show="editingTaskId === task.id" class="task-title-edit" type="text" :value="task.title" @blur="saveTitle(task, $event)" @keydown.enter="$event.target.blur()" @keydown.escape="editingTaskId = null" x-effect="if (editingTaskId === task.id) $nextTick(() => $el.focus())">
+                    <span class="task-notes" x-show="task.notes && editingNotesId !== task.id" x-text="task.notes" @click="startEditNotes(task)" style="cursor:text"></span>
+                    <input x-show="editingNotesId === task.id" class="task-notes-edit" type="text" :value="task.notes || ''" placeholder="Add notes..." @blur="saveNotes(task, $event)" @keydown.enter="$event.target.blur()" @keydown.escape="editingNotesId = null" x-effect="if (editingNotesId === task.id) $nextTick(() => $el.focus())">
+                    <div class="task-meta" x-show="task.subtasks && task.subtasks.length > 0">
+                      <span class="subtask-toggle" @click.stop="toggleSubtaskExpand(task.id)"
+                            x-text="(expandedSubtasks[task.id] ? '&#9662;' : '&#9656;') + ' Subtasks ' + subtaskProgress(task)">
+                      </span>
+                    </div>
+                  </div>
+                  <span class="recurrence-icon" :class="task.recurrence ? task.recurrence.type : ''" :title="task.recurrence ? recurrenceLabel(task) : 'Click to make recurring'" @click="cycleRecurrence(task)" style="cursor:pointer">&#x21bb;</span>
+                  <span class="priority-chip" :class="'priority-' + task.priority" x-text="priorityLabel(task.priority)" @wheel.prevent="scrollPriority(task, $event)" :title="priorityTooltip(task.priority)" style="cursor:ns-resize"></span>
+                  <span class="task-date" x-text="shortDate(task.date)"></span>
+                  <button class="btn-delete" @click="deleteTask(task.id)" title="Delete">
+                    <svg viewBox="0 0 16 16" width="14" height="14"><path d="M4 4l8 8M12 4l-8 8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+                  </button>
+                </div>
+                <!-- Subtasks expanded -->
+                <div class="subtask-section" x-show="expandedSubtasks[task.id] && task.subtasks && task.subtasks.length > 0" x-effect="if (expandedSubtasks[task.id]) $nextTick(() => initSubtaskSortable($el, task.id))">
+                  <template x-for="(sub, si) in task.subtasks" :key="sub.id">
+                    <div class="subtask-row" :data-sub-id="sub.id">
+                      <span class="drag-handle"><svg viewBox="0 0 8 12" width="8" height="12"><circle cx="2.5" cy="2" r="1" fill="currentColor"/><circle cx="5.5" cy="2" r="1" fill="currentColor"/><circle cx="2.5" cy="6" r="1" fill="currentColor"/><circle cx="5.5" cy="6" r="1" fill="currentColor"/><circle cx="2.5" cy="10" r="1" fill="currentColor"/><circle cx="5.5" cy="10" r="1" fill="currentColor"/></svg></span>
+                      <span class="subtask-num" x-text="si + 1"></span>
+                      <div class="subtask-check" :class="{ checked: sub.done }" @click="toggleSubtask(task.id, sub)">
+                        <svg x-show="sub.done" class="check-icon" viewBox="0 0 12 12"><path d="M2.5 6l2.5 2.5 4.5-4.5" stroke="currentColor" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                      </div>
+                      <span class="subtask-title" :class="{ done: sub.done }" x-text="sub.title" x-show="editingSubtaskId !== sub.id" @click="startEditSubtitle(sub)" style="cursor:text"></span>
+                      <input x-show="editingSubtaskId === sub.id" class="subtask-title-edit" type="text" :value="sub.title" @blur="saveSubtitle(task.id, sub, $event)" @keydown.enter="$event.target.blur()" @keydown.escape="editingSubtaskId = null" x-effect="if (editingSubtaskId === sub.id) $nextTick(() => $el.focus())">
+                      <button class="subtask-delete" @click="deleteSubtask(task.id, sub.id)">
+                        <svg viewBox="0 0 16 16" width="10" height="10"><path d="M4 4l8 8M12 4l-8 8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+                      </button>
+                    </div>
+                  </template>
+                  <div class="subtask-add">
+                    <input type="text" placeholder="Add subtask..." @keydown.enter="addSubtask(task.id, $event)" @keydown.escape.stop="$event.target.blur()">
+                  </div>
+                </div>
+              </div>
+            </template>
+          </div>
+        </template>
+        <div class="empty-state" x-show="monthViewTasks().length === 0" x-text="selectedCalDay ? 'No tasks for this day.' : 'No tasks for this month.'"></div>
+      </div>
+    </template>
+
+    <!-- Day View -->
+    <template x-if="view === 'day'">
+      <div>
+        <div class="section-header">
+          Tasks<span class="section-count" x-text="tasksForDate(day).length + ' items'"></span>
+        </div>
+        <template x-for="task in tasksForDate(day)" :key="task.id">
+          <div>
+            <div class="task-row" :class="{ done: task.done }">
+              <span class="type-dot" :class="task.type || 'task'"></span>
+              <div class="checkbox-wrap" @click="toggleDone(task)">
+                <div class="checkbox" :class="{ checked: task.done }">
+                  <svg x-show="task.done" class="check-icon" viewBox="0 0 12 12"><path d="M2.5 6l2.5 2.5 4.5-4.5" stroke="currentColor" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                </div>
+              </div>
+              <div class="task-info">
+                <span class="task-title" :class="{ 'line-through': task.done }" x-text="task.title" x-show="editingTaskId !== task.id" @click="startEditTitle(task)" style="cursor:text"></span>
+                <input x-show="editingTaskId === task.id" class="task-title-edit" type="text" :value="task.title" @blur="saveTitle(task, $event)" @keydown.enter="$event.target.blur()" @keydown.escape="editingTaskId = null" x-effect="if (editingTaskId === task.id) $nextTick(() => $el.focus())">
+                <span class="task-notes" x-show="task.notes && editingNotesId !== task.id" x-text="task.notes" @click="startEditNotes(task)" style="cursor:text"></span>
+                <input x-show="editingNotesId === task.id" class="task-notes-edit" type="text" :value="task.notes || ''" placeholder="Add notes..." @blur="saveNotes(task, $event)" @keydown.enter="$event.target.blur()" @keydown.escape="editingNotesId = null" x-effect="if (editingNotesId === task.id) $nextTick(() => $el.focus())">
+                <div class="task-meta" x-show="task.subtasks && task.subtasks.length > 0">
+                  <span class="subtask-toggle" @click.stop="toggleSubtaskExpand(task.id)"
+                        x-text="(expandedSubtasks[task.id] ? '&#9662;' : '&#9656;') + ' Subtasks ' + subtaskProgress(task)">
+                  </span>
+                </div>
+              </div>
+              <span class="recurrence-icon" :class="task.recurrence ? task.recurrence.type : ''" :title="task.recurrence ? recurrenceLabel(task) : 'Click to make recurring'" @click="cycleRecurrence(task)" style="cursor:pointer">&#x21bb;</span>
+              <span class="priority-chip" :class="'priority-' + task.priority" x-text="priorityLabel(task.priority)" @wheel.prevent="scrollPriority(task, $event)" :title="priorityTooltip(task.priority)" style="cursor:ns-resize"></span>
+              <button class="btn-delete" @click="deleteTask(task.id)" title="Delete">
+                <svg viewBox="0 0 16 16" width="14" height="14"><path d="M4 4l8 8M12 4l-8 8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+              </button>
+            </div>
+            <!-- Subtasks expanded -->
+            <div class="subtask-section" x-show="expandedSubtasks[task.id] && task.subtasks && task.subtasks.length > 0" x-effect="if (expandedSubtasks[task.id]) $nextTick(() => initSubtaskSortable($el, task.id))">
+              <template x-for="(sub, si) in task.subtasks" :key="sub.id">
+                <div class="subtask-row" :data-sub-id="sub.id">
+                  <span class="drag-handle"><svg viewBox="0 0 8 12" width="8" height="12"><circle cx="2.5" cy="2" r="1" fill="currentColor"/><circle cx="5.5" cy="2" r="1" fill="currentColor"/><circle cx="2.5" cy="6" r="1" fill="currentColor"/><circle cx="5.5" cy="6" r="1" fill="currentColor"/><circle cx="2.5" cy="10" r="1" fill="currentColor"/><circle cx="5.5" cy="10" r="1" fill="currentColor"/></svg></span>
+                  <span class="subtask-num" x-text="si + 1"></span>
+                  <div class="subtask-check" :class="{ checked: sub.done }" @click="toggleSubtask(task.id, sub)">
+                    <svg x-show="sub.done" class="check-icon" viewBox="0 0 12 12"><path d="M2.5 6l2.5 2.5 4.5-4.5" stroke="currentColor" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                  </div>
+                  <span class="subtask-title" :class="{ done: sub.done }" x-text="sub.title" x-show="editingSubtaskId !== sub.id" @click="startEditSubtitle(sub)" style="cursor:text"></span>
+                  <input x-show="editingSubtaskId === sub.id" class="subtask-title-edit" type="text" :value="sub.title" @blur="saveSubtitle(task.id, sub, $event)" @keydown.enter="$event.target.blur()" @keydown.escape="editingSubtaskId = null" x-effect="if (editingSubtaskId === sub.id) $nextTick(() => $el.focus())">
+                  <button class="subtask-delete" @click="deleteSubtask(task.id, sub.id)">
+                    <svg viewBox="0 0 16 16" width="10" height="10"><path d="M4 4l8 8M12 4l-8 8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+                  </button>
+                </div>
+              </template>
+              <div class="subtask-add">
+                <input type="text" placeholder="Add subtask..." @keydown.enter="addSubtask(task.id, $event)" @keydown.escape.stop="$event.target.blur()">
+              </div>
+            </div>
+          </div>
+        </template>
+        <div class="empty-state" x-show="tasksForDate(day).length === 0">No tasks for this day.</div>
+      </div>
+    </template>
+
+    <!-- Projects View -->
+    <template x-if="view === 'projects'">
+      <div>
+        <div class="section-header" style="margin-top:8px">
+          Projects<span class="section-count" x-text="projects.length + ' total'"></span>
+        </div>
+        <template x-for="proj in projects" :key="proj.id">
+          <div class="project-card">
+            <div class="project-header">
+              <span class="project-name" x-text="proj.name"></span>
+              <span class="status-badge" :class="'status-' + proj.status"
+                    @click="cycleProjectStatus(proj)"
+                    x-text="proj.status" :title="'Click to change status'"></span>
+              <button class="project-delete" @click="deleteProject(proj.id)" title="Delete project">
+                <svg viewBox="0 0 16 16" width="14" height="14"><path d="M4 4l8 8M12 4l-8 8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+              </button>
+            </div>
+            <div class="project-desc" x-show="proj.description" x-text="proj.description"></div>
+            <div class="project-repo" x-show="proj.repo">
+              <a :href="proj.repo" target="_blank" x-text="proj.repo.replace('https://','')"></a>
+            </div>
+            <div class="project-entries">
+              <template x-for="entry in sortedEntries(proj.entries)" :key="entry.id">
+                <div class="entry-row">
+                  <span class="entry-date" x-text="shortEntryDate(entry.date)"></span>
+                  <span class="entry-summary" x-text="entry.summary"></span>
+                  <button class="entry-delete" @click="deleteEntry(proj.id, entry.id)">&#x2715;</button>
+                </div>
+              </template>
+              <div class="entry-add-form">
+                <input type="text" :placeholder="'Add entry...'"
+                       @keydown.enter="addEntry(proj.id, $event)"
+                       @keydown.escape.stop="$event.target.blur()">
+                <button class="btn-sm" @click="addEntry(proj.id, $event)">+ Add</button>
+              </div>
+            </div>
+          </div>
+        </template>
+        <div class="empty-state" x-show="projects.length === 0">No projects yet. Click + Project to create one.</div>
+      </div>
+    </template>
+
+    <!-- Backlog Panel (persistent on task views) -->
+    <div class="collapsible-panel" x-show="!isListView() && backlogTasks().length > 0">
+      <div class="collapsible-header" @click="showBacklog = !showBacklog">
+        <span class="collapsible-arrow" x-text="showBacklog ? '&#9662;' : '&#9656;'"></span>
+        <span class="collapsible-title">Backlog</span>
+        <span class="collapsible-count" x-text="backlogTasks().length + ' items'"></span>
+      </div>
+      <div x-show="showBacklog" x-ref="backlogList" x-effect="initBacklogSortable()">
+        <template x-for="task in backlogTasks()" :key="task.id">
+          <div :data-id="task.id">
+            <div class="task-row" :class="{ done: task.done }">
+              <span class="drag-handle"><svg viewBox="0 0 10 16" width="10" height="16"><circle cx="3" cy="3" r="1.2" fill="currentColor"/><circle cx="7" cy="3" r="1.2" fill="currentColor"/><circle cx="3" cy="8" r="1.2" fill="currentColor"/><circle cx="7" cy="8" r="1.2" fill="currentColor"/><circle cx="3" cy="13" r="1.2" fill="currentColor"/><circle cx="7" cy="13" r="1.2" fill="currentColor"/></svg></span>
+              <span class="type-dot task"></span>
+              <div class="checkbox-wrap" @click="toggleDone(task)">
+                <div class="checkbox" :class="{ checked: task.done }">
+                  <svg x-show="task.done" class="check-icon" viewBox="0 0 12 12"><path d="M2.5 6l2.5 2.5 4.5-4.5" stroke="currentColor" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                </div>
+              </div>
+              <div class="task-info">
+                <span class="task-title" :class="{ 'line-through': task.done }" x-text="task.title" x-show="editingTaskId !== task.id" @click="startEditTitle(task)" style="cursor:text"></span>
+                <input x-show="editingTaskId === task.id" class="task-title-edit" type="text" :value="task.title" @blur="saveTitle(task, $event)" @keydown.enter="$event.target.blur()" @keydown.escape="editingTaskId = null" x-effect="if (editingTaskId === task.id) $nextTick(() => $el.focus())">
+                <span class="task-notes" x-show="task.notes && editingNotesId !== task.id" x-text="task.notes" @click="startEditNotes(task)" style="cursor:text"></span>
+                <input x-show="editingNotesId === task.id" class="task-notes-edit" type="text" :value="task.notes || ''" placeholder="Add notes..." @blur="saveNotes(task, $event)" @keydown.enter="$event.target.blur()" @keydown.escape="editingNotesId = null" x-effect="if (editingNotesId === task.id) $nextTick(() => $el.focus())">
+                <div class="task-meta" x-show="task.subtasks && task.subtasks.length > 0">
+                  <span class="subtask-toggle" @click.stop="toggleSubtaskExpand(task.id)"
+                        x-text="(expandedSubtasks[task.id] ? '&#9662;' : '&#9656;') + ' Subtasks ' + subtaskProgress(task)">
+                  </span>
+                </div>
+              </div>
+              <span class="priority-chip priority-P3" x-text="priorityLabel('P3')"></span>
+              <button class="btn-delete" @click="deleteTask(task.id)" title="Delete">
+                <svg viewBox="0 0 16 16" width="14" height="14"><path d="M4 4l8 8M12 4l-8 8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+              </button>
+            </div>
+            <div class="subtask-section" x-show="expandedSubtasks[task.id] && task.subtasks && task.subtasks.length > 0" x-effect="if (expandedSubtasks[task.id]) $nextTick(() => initSubtaskSortable($el, task.id))">
+              <template x-for="(sub, si) in task.subtasks" :key="sub.id">
+                <div class="subtask-row" :data-sub-id="sub.id">
+                  <span class="drag-handle"><svg viewBox="0 0 8 12" width="8" height="12"><circle cx="2.5" cy="2" r="1" fill="currentColor"/><circle cx="5.5" cy="2" r="1" fill="currentColor"/><circle cx="2.5" cy="6" r="1" fill="currentColor"/><circle cx="5.5" cy="6" r="1" fill="currentColor"/><circle cx="2.5" cy="10" r="1" fill="currentColor"/><circle cx="5.5" cy="10" r="1" fill="currentColor"/></svg></span>
+                  <span class="subtask-num" x-text="si + 1"></span>
+                  <div class="subtask-check" :class="{ checked: sub.done }" @click="toggleSubtask(task.id, sub)">
+                    <svg x-show="sub.done" class="check-icon" viewBox="0 0 12 12"><path d="M2.5 6l2.5 2.5 4.5-4.5" stroke="currentColor" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                  </div>
+                  <span class="subtask-title" :class="{ done: sub.done }" x-text="sub.title" x-show="editingSubtaskId !== sub.id" @click="startEditSubtitle(sub)" style="cursor:text"></span>
+                  <input x-show="editingSubtaskId === sub.id" class="subtask-title-edit" type="text" :value="sub.title" @blur="saveSubtitle(task.id, sub, $event)" @keydown.enter="$event.target.blur()" @keydown.escape="editingSubtaskId = null" x-effect="if (editingSubtaskId === sub.id) $nextTick(() => $el.focus())">
+                  <button class="subtask-delete" @click="deleteSubtask(task.id, sub.id)">
+                    <svg viewBox="0 0 16 16" width="10" height="10"><path d="M4 4l8 8M12 4l-8 8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+                  </button>
+                </div>
+              </template>
+              <div class="subtask-add">
+                <input type="text" placeholder="Add subtask..." @keydown.enter="addSubtask(task.id, $event)" @keydown.escape.stop="$event.target.blur()">
+              </div>
+            </div>
+          </div>
+        </template>
+      </div>
+    </div>
+
+    <!-- Payments Panel (persistent on task views) -->
+    <div class="collapsible-panel" x-show="!isListView() && paymentTasks().length > 0">
+      <div class="collapsible-header" @click="showPayments = !showPayments">
+        <span class="collapsible-arrow" x-text="showPayments ? '&#9662;' : '&#9656;'"></span>
+        <span class="collapsible-title">Payments</span>
+        <span class="collapsible-count" x-text="paymentTasks().length + ' items'"></span>
+      </div>
+      <div x-show="showPayments">
+        <template x-for="group in paymentsByMonth()" :key="group.key">
+          <div class="payment-month-group">
+            <div class="payment-month-header">
+              <span class="payment-month-label" x-text="group.label"></span>
+              <span class="payment-month-total" x-show="group.total > 0" x-text="'$' + group.total.toFixed(2)"></span>
+            </div>
+            <template x-for="task in group.tasks" :key="task.id">
+              <div>
+                <div class="task-row" :class="{ done: task.done }">
+                  <span class="type-dot payment"></span>
+                  <div class="checkbox-wrap" @click="toggleDone(task)">
+                    <div class="checkbox" :class="{ checked: task.done }">
+                      <svg x-show="task.done" class="check-icon" viewBox="0 0 12 12"><path d="M2.5 6l2.5 2.5 4.5-4.5" stroke="currentColor" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                    </div>
+                  </div>
+                  <div class="task-info">
+                    <span class="task-title" :class="{ 'line-through': task.done }" x-text="task.title" x-show="editingTaskId !== task.id" @click="startEditTitle(task)" style="cursor:text"></span>
+                    <input x-show="editingTaskId === task.id" class="task-title-edit" type="text" :value="task.title" @blur="saveTitle(task, $event)" @keydown.enter="$event.target.blur()" @keydown.escape="editingTaskId = null" x-effect="if (editingTaskId === task.id) $nextTick(() => $el.focus())">
+                    <div class="task-meta">
+                      <span x-text="task.date"></span>
+                    </div>
+                  </div>
+                  <span class="payment-amount" x-show="task.amount" x-text="'$' + task.amount"></span>
+                  <button class="btn-delete" @click="deleteTask(task.id)" title="Delete">
+                    <svg viewBox="0 0 16 16" width="14" height="14"><path d="M4 4l8 8M12 4l-8 8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+                  </button>
+                </div>
+              </div>
+            </template>
+          </div>
+        </template>
+      </div>
+    </div>
+
+  </main>
+
+
+  <!-- Add Task Modal -->
+  <div class="modal-backdrop" x-show="showModal" x-transition.opacity @click.self="showModal = false" style="display:none">
+    <div class="modal" @click.stop x-show="showModal" x-transition>
+      <div class="modal-title">
+        Add Task
+        <button class="modal-close" @click="showModal = false">&times;</button>
+      </div>
+      <form @submit.prevent="addTask()">
+        <div class="form-group">
+          <label class="form-label">Title</label>
+          <input class="form-input" type="text" x-model="form.title" placeholder="Task title" x-ref="titleInput" autofocus>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Date</label>
+          <input class="form-input" type="date" x-model="form.date" @change="updateRecurrenceFromForm()">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Priority</label>
+          <div class="priority-selector">
+            <template x-for="p in ['P0','P1','P2','P3']" :key="p">
+              <span class="priority-chip"
+                    :class="['priority-' + p, { selected: form.priority === p }]"
+                    @click="form.priority = p"
+                    x-text="priorityLabel(p)"
+                    style="cursor:pointer"></span>
+            </template>
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Type</label>
+          <div class="type-selector">
+            <template x-for="t in ['task','deadline','reminder','payment']" :key="t">
+              <span class="type-chip"
+                    :class="['type-' + t, { selected: form.type === t }]"
+                    @click="form.type = t"
+                    x-text="t.charAt(0).toUpperCase() + t.slice(1)"
+                    style="cursor:pointer"></span>
+            </template>
+          </div>
+        </div>
+        <div class="form-group" x-show="form.type === 'payment'">
+          <label class="form-label">Amount</label>
+          <input class="form-input" type="text" x-model="form.amount" placeholder="e.g. 150.00">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Recurrence</label>
+          <select class="form-select" x-model="form.recurrenceType" @change="updateRecurrenceFromForm()">
+            <option value="none">None</option>
+            <option value="weekly">Weekly</option>
+            <option value="monthly">Monthly</option>
+            <option value="yearly">Yearly</option>
+          </select>
+          <div class="recurrence-hint" x-show="form.recurrenceType !== 'none'" x-text="recurrenceHint()"></div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Notes</label>
+          <input class="form-input" type="text" x-model="form.notes" placeholder="Optional notes">
+        </div>
+        <div class="modal-actions">
+          <button type="button" class="btn-ghost" @click="showModal = false">Cancel</button>
+          <button type="submit" class="btn-primary">Add task</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Add Project Modal -->
+  <div class="modal-backdrop" x-show="showProjectModal" x-transition.opacity @click.self="showProjectModal = false" style="display:none">
+    <div class="modal" @click.stop x-show="showProjectModal" x-transition>
+      <div class="modal-title">
+        Add Project
+        <button class="modal-close" @click="showProjectModal = false">&times;</button>
+      </div>
+      <form @submit.prevent="addProject()">
+        <div class="form-group">
+          <label class="form-label">Name</label>
+          <input class="form-input" type="text" x-model="projectForm.name" placeholder="Project name" x-ref="projectNameInput" autofocus>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Repository URL</label>
+          <input class="form-input" type="text" x-model="projectForm.repo" placeholder="https://github.com/...">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Description</label>
+          <input class="form-input" type="text" x-model="projectForm.description" placeholder="Brief description">
+        </div>
+        <div class="modal-actions">
+          <button type="button" class="btn-ghost" @click="showProjectModal = false">Cancel</button>
+          <button type="submit" class="btn-primary">Create project</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+</div>
+
+<script>
+function todoApp() {
+  const today = new Date();
+  const todayStr = fmt(today);
+
+  function fmt(d) {
+    return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+  }
+
+  function parseDate(str) {
+    const [y,m,d] = str.split('-').map(Number);
+    return new Date(y, m-1, d);
+  }
+
+  const PRIORITY_ORDER = {P0:0, P1:1, P2:2, P3:3};
+  const MONTHS_SHORT = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const MONTHS_FULL = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+  const DAYS_SHORT = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+  const DAYS_FULL = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+  // Monday-first day names for recurrence labels
+  const DAYS_MON_FIRST = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
+  // Views that show flat lists rather than time-based periods
+  const LIST_VIEWS = ['projects', 'all', 'backlog', 'payments'];
+
+  function taskSort(a, b) {
+    const pa = PRIORITY_ORDER[a.priority] ?? 99;
+    const pb = PRIORITY_ORDER[b.priority] ?? 99;
+    if (pa !== pb) return pa - pb;
+    return a.title.toLowerCase().localeCompare(b.title.toLowerCase());
+  }
+
+  return {
+    tasks: [],
+    projects: [],
+    darkMode: !localStorage.getItem('theme') || localStorage.getItem('theme') === 'dark',
+    priorityMode: localStorage.getItem('priorityMode') || 'priority',
+    fontSize: parseInt(localStorage.getItem('fontSize') || '100'),
+    view: 'month',
+    year: today.getFullYear(),
+    month: today.getMonth(),
+    day: todayStr,
+    showDone: false,
+    showModal: false,
+    showProjectModal: false,
+    selectedCalDay: null,
+    showBacklog: true,
+    showPayments: true,
+    editingTaskId: null,
+    editingNotesId: null,
+    editingSubtaskId: null,
+    _deletedTask: null,
+    _deleteTimer: null,
+    expandedSubtasks: {},
+    recentlyDone: {},
+    toastMessage: '',
+    toastVisible: false,
+    toastType: 'success',
+    _toastTimer: null,
+    searchQuery: '',
+    form: { title: '', date: todayStr, priority: 'P2', notes: '', type: 'task', recurrenceType: 'none', recurrence: null, amount: '' },
+    projectForm: { name: '', repo: '', description: '' },
+
+    // ── Init ───────────────────────────────
+    async init() {
+      if (!this.darkMode) document.documentElement.classList.add('light');
+      if (this.fontSize !== 100) document.documentElement.style.fontSize = this.fontSize + '%';
+      await Promise.all([this.fetchTasks(), this.fetchProjects()]);
+    },
+
+    toggleTheme() {
+      this.darkMode = !this.darkMode;
+      document.documentElement.classList.toggle('light', !this.darkMode);
+      localStorage.setItem('theme', this.darkMode ? 'dark' : 'light');
+    },
+
+    togglePriorityMode() {
+      this.priorityMode = this.priorityMode === 'priority' ? 'eisenhower' : 'priority';
+      localStorage.setItem('priorityMode', this.priorityMode);
+    },
+
+    priorityLabel(p) {
+      if (this.priorityMode === 'eisenhower') {
+        return { P0: 'Do', P1: 'Plan', P2: 'Defer', P3: 'Later' }[p] || p;
+      }
+      return p;
+    },
+
+    async cycleRecurrence(task) {
+      if (task.done) return;
+      const d = parseDate(task.date);
+      const cycle = [null, 'weekly', 'monthly', 'yearly'];
+      const currentType = task.recurrence ? task.recurrence.type : null;
+      const idx = cycle.indexOf(currentType);
+      const nextType = cycle[(idx + 1) % cycle.length];
+      let recurrence = null;
+      if (nextType === 'weekly') {
+        recurrence = { type: 'weekly', dow: (d.getDay() + 6) % 7 };
+      } else if (nextType === 'monthly') {
+        recurrence = { type: 'monthly', day: d.getDate() };
+      } else if (nextType === 'yearly') {
+        recurrence = { type: 'yearly', month: d.getMonth() + 1, day: d.getDate() };
+      }
+      const res = await this.apiFetch('/api/tasks/' + task.id, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ recurrence }),
+      });
+      if (res.ok) {
+        task.recurrence = recurrence;
+        this.toast(recurrence ? this.recurrenceLabel(task) : 'Recurrence removed');
+      }
+    },
+
+    priorityTooltip(p) {
+      const tips = { P0: 'Urgent & Important', P1: 'Important, Not Urgent', P2: 'Urgent, Not Important', P3: 'Not Urgent, Not Important' };
+      if (this.priorityMode === 'eisenhower') return tips[p] || '';
+      return 'Scroll to change priority';
+    },
+
+    adjustFontSize(delta) {
+      this.fontSize = Math.max(70, Math.min(150, this.fontSize + delta));
+      document.documentElement.style.fontSize = this.fontSize + '%';
+      localStorage.setItem('fontSize', String(this.fontSize));
+    },
+
+    // ── Task API ────────────────────────────
+    async fetchTasks() {
+      const res = await fetch('/api/tasks');
+      const data = await res.json();
+      this.tasks = data.tasks;
+      if (data.carried_over > 0) {
+        this.toast(data.carried_over + ' overdue task(s) moved to today');
+      }
+    },
+
+    async addTask() {
+      if (!this.form.title.trim()) return;
+      const payload = {
+        title: this.form.title,
+        date: this.form.date,
+        priority: this.form.priority,
+        notes: this.form.notes,
+        type: this.form.type,
+        recurrence: this.form.recurrence,
+        amount: this.form.amount,
+      };
+      const res = await this.apiFetch('/api/tasks', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify(payload),
+      });
+      if (res.ok) {
+        await this.fetchTasks();
+        this.showModal = false;
+        this.form = { title: '', date: todayStr, priority: 'P2', notes: '', type: 'task', recurrenceType: 'none', recurrence: null, amount: '' };
+        this.toast('Task added');
+      }
+    },
+
+    async toggleDone(task) {
+      const markingDone = !task.done;
+      const wasRecurring = task.recurrence && markingDone;
+      const res = await this.apiFetch('/api/tasks/' + task.id, {
+        method: 'PUT',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ done: !task.done }),
+      });
+      if (res.ok) {
+        await this.fetchTasks();
+        if (wasRecurring) {
+          this.toast('Next occurrence created');
+        }
+        if (markingDone) {
+          // Keep visible with strikethrough for 10s before hiding
+          this.recentlyDone[task.id] = true;
+          setTimeout(() => { delete this.recentlyDone[task.id]; }, 10000);
+        } else {
+          delete this.recentlyDone[task.id];
+        }
+      }
+    },
+
+    async deleteTask(id) {
+      const task = this.tasks.find(t => t.id === id);
+      if (!task) return;
+      // Soft delete: remove from UI, defer server call
+      this.tasks = this.tasks.filter(t => t.id !== id);
+      this._deletedTask = { ...task, subtasks: (task.subtasks || []).map(s => ({ ...s })) };
+      if (this._deleteTimer) clearTimeout(this._deleteTimer);
+      this.toast('Task deleted', 'success', 10000);
+      this._deleteTimer = setTimeout(async () => {
+        if (!this._deletedTask || this._deletedTask.id !== id) return;
+        await this.apiFetch('/api/tasks/' + id, { method: 'DELETE' });
+        this._deletedTask = null;
+      }, 10000);
+    },
+
+    undoDelete() {
+      if (!this._deletedTask) return;
+      const task = this._deletedTask;
+      this._deletedTask = null;
+      if (this._deleteTimer) { clearTimeout(this._deleteTimer); this._deleteTimer = null; }
+      // Task still exists on server — just restore to local array
+      this.tasks.push(task);
+      this.toast('Task restored');
+    },
+
+    async clearDone() {
+      const res = await this.apiFetch('/api/tasks/clear-done', { method: 'POST' });
+      if (res.ok) {
+        const data = await res.json();
+        this.tasks = this.tasks.filter(t => !t.done);
+        if (data.cleared > 0) this.toast('Cleared ' + data.cleared + ' completed task(s)');
+        else this.toast('No completed tasks to clear');
+      }
+    },
+
+    async reloadFromDisk() {
+      await Promise.all([this.fetchTasks(), this.fetchProjects()]);
+      this.toast('Reloaded from disk');
+    },
+
+    // ── Inline Edit ─────────────────────────
+    startEditTitle(task) {
+      if (task.done) return;
+      this.editingTaskId = task.id;
+    },
+
+    async saveTitle(task, event) {
+      const newTitle = event.target.value.trim();
+      this.editingTaskId = null;
+      if (!newTitle || newTitle === task.title) return;
+      const res = await this.apiFetch('/api/tasks/' + task.id, {
+        method: 'PUT',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ title: newTitle }),
+      });
+      if (res.ok) {
+        task.title = newTitle;
+      }
+    },
+
+    startEditNotes(task) {
+      this.editingNotesId = task.id;
+    },
+
+    async saveNotes(task, event) {
+      const newNotes = event.target.value.trim();
+      this.editingNotesId = null;
+      if (newNotes === task.notes) return;
+      const res = await this.apiFetch('/api/tasks/' + task.id, {
+        method: 'PUT',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ notes: newNotes }),
+      });
+      if (res.ok) {
+        task.notes = newNotes;
+      }
+    },
+
+    // ── Subtask API ─────────────────────────
+    async addSubtask(taskId, event) {
+      const input = event.target;
+      const title = input.value.trim();
+      if (!title) return;
+      const res = await this.apiFetch('/api/tasks/' + taskId + '/subtasks', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ title }),
+      });
+      if (res.ok) {
+        const sub = await res.json();
+        const task = this.tasks.find(t => t.id === taskId);
+        if (task) {
+          if (!task.subtasks) task.subtasks = [];
+          task.subtasks.push(sub);
+        }
+        input.value = '';
+      }
+    },
+
+    async toggleSubtask(taskId, sub) {
+      const res = await this.apiFetch('/api/tasks/' + taskId + '/subtasks/' + sub.id, {
+        method: 'PUT',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ done: !sub.done }),
+      });
+      if (res.ok) {
+        sub.done = !sub.done;
+      }
+    },
+
+    async deleteSubtask(taskId, subId) {
+      const res = await this.apiFetch('/api/tasks/' + taskId + '/subtasks/' + subId, { method: 'DELETE' });
+      if (res.ok) {
+        const task = this.tasks.find(t => t.id === taskId);
+        if (task) {
+          task.subtasks = task.subtasks.filter(s => s.id !== subId);
+        }
+      }
+    },
+
+    startEditSubtitle(sub) {
+      if (sub.done) return;
+      this.editingSubtaskId = sub.id;
+    },
+
+    async saveSubtitle(taskId, sub, event) {
+      const newTitle = event.target.value.trim();
+      this.editingSubtaskId = null;
+      if (!newTitle || newTitle === sub.title) return;
+      const res = await this.apiFetch('/api/tasks/' + taskId + '/subtasks/' + sub.id, {
+        method: 'PUT',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ title: newTitle }),
+      });
+      if (res.ok) {
+        sub.title = newTitle;
+      }
+    },
+
+    overdueCount() {
+      return this.tasks.filter(t => !t.done && this.isRegularTask(t) && t.date < todayStr).length;
+    },
+
+    toggleSubtaskExpand(taskId) {
+      this.expandedSubtasks[taskId] = !this.expandedSubtasks[taskId];
+    },
+
+    subtaskProgress(task) {
+      if (!task.subtasks || task.subtasks.length === 0) return '';
+      const done = task.subtasks.filter(s => s.done).length;
+      return done + '/' + task.subtasks.length;
+    },
+
+    // ── Project API ─────────────────────────
+    async fetchProjects() {
+      const res = await fetch('/api/projects');
+      const data = await res.json();
+      this.projects = data.projects;
+    },
+
+    async addProject() {
+      if (!this.projectForm.name.trim()) return;
+      const res = await this.apiFetch('/api/projects', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify(this.projectForm),
+      });
+      if (res.ok) {
+        await this.fetchProjects();
+        this.showProjectModal = false;
+        this.projectForm = { name: '', repo: '', description: '' };
+        this.toast('Project created');
+      }
+    },
+
+    async deleteProject(id) {
+      const res = await this.apiFetch('/api/projects/' + id, { method: 'DELETE' });
+      if (res.ok) {
+        this.projects = this.projects.filter(p => p.id !== id);
+        this.toast('Project deleted');
+      }
+    },
+
+    async cycleProjectStatus(proj) {
+      const cycle = { active: 'paused', paused: 'completed', completed: 'active' };
+      const next = cycle[proj.status] || 'active';
+      const res = await this.apiFetch('/api/projects/' + proj.id, {
+        method: 'PUT',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ status: next }),
+      });
+      if (res.ok) {
+        proj.status = next;
+      }
+    },
+
+    async addEntry(projId, event) {
+      const input = event.target.matches('input')
+        ? event.target
+        : event.target.closest('.entry-add-form').querySelector('input');
+      const summary = input.value.trim();
+      if (!summary) return;
+      const res = await this.apiFetch('/api/projects/' + projId + '/entries', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ summary }),
+      });
+      if (res.ok) {
+        const entry = await res.json();
+        const proj = this.projects.find(p => p.id === projId);
+        if (proj) proj.entries.push(entry);
+        input.value = '';
+      }
+    },
+
+    async deleteEntry(projId, entryId) {
+      const res = await this.apiFetch('/api/projects/' + projId + '/entries/' + entryId, { method: 'DELETE' });
+      if (res.ok) {
+        const proj = this.projects.find(p => p.id === projId);
+        if (proj) {
+          proj.entries = proj.entries.filter(e => e.id !== entryId);
+        }
+      }
+    },
+
+    sortedEntries(entries) {
+      return [...entries].sort((a, b) => b.date.localeCompare(a.date));
+    },
+
+    shortEntryDate(dateStr) {
+      const d = parseDate(dateStr);
+      return MONTHS_SHORT[d.getMonth()] + ' ' + d.getDate();
+    },
+
+    // ── Navigation ─────────────────────────
+    isListView(v) {
+      return LIST_VIEWS.includes(v ?? this.view);
+    },
+
+    switchView(v) {
+      if (v === this.view) return;
+      if (this.isListView(v)) {
+        this.view = v;
+        return;
+      }
+      if (this.isListView()) {
+        this.view = v;
+        return;
+      }
+      if (v === 'month' && this.view === 'day') {
+        const d = parseDate(this.day);
+        this.year = d.getFullYear();
+        this.month = d.getMonth();
+      } else if (v === 'day' && this.view === 'month') {
+        if (today.getFullYear() === this.year && today.getMonth() === this.month) {
+          this.day = todayStr;
+        } else {
+          this.day = this.year + '-' + String(this.month+1).padStart(2,'0') + '-01';
+        }
+      } else if (v === 'day' && this.view === 'year') {
+        this.day = todayStr;
+      }
+      this.view = v;
+    },
+
+    prevPeriod() {
+      if (this.view === 'year') { this.year--; }
+      else if (this.view === 'month') {
+        if (this.month === 0) { this.month = 11; this.year--; }
+        else { this.month--; }
+        this.selectedCalDay = null;
+      } else if (this.view === 'day') {
+        const d = parseDate(this.day);
+        d.setDate(d.getDate() - 1);
+        this.day = fmt(d);
+        this.year = d.getFullYear();
+        this.month = d.getMonth();
+      }
+    },
+
+    nextPeriod() {
+      if (this.view === 'year') { this.year++; }
+      else if (this.view === 'month') {
+        if (this.month === 11) { this.month = 0; this.year++; }
+        else { this.month++; }
+        this.selectedCalDay = null;
+      } else if (this.view === 'day') {
+        const d = parseDate(this.day);
+        d.setDate(d.getDate() + 1);
+        this.day = fmt(d);
+        this.year = d.getFullYear();
+        this.month = d.getMonth();
+      }
+    },
+
+    goToday() {
+      this.year = today.getFullYear();
+      this.month = today.getMonth();
+      this.day = todayStr;
+      this.view = 'day';
+      this.toast('Jumped to today');
+    },
+
+    selectCalDay(year, month, day) {
+      const dateStr = year + '-' + String(month+1).padStart(2,'0') + '-' + String(day).padStart(2,'0');
+      // Toggle: click same day again → deselect (show all)
+      this.selectedCalDay = this.selectedCalDay === dateStr ? null : dateStr;
+    },
+
+    monthViewTasks() {
+      if (this.selectedCalDay) {
+        return this.tasksForDate(this.selectedCalDay);
+      }
+      return this.tasksForMonth(this.year, this.month);
+    },
+
+    // ── Period Label ───────────────────────
+    getPeriodLabel() {
+      if (this.view === 'all') return 'All Tasks';
+      if (this.view === 'backlog') return 'Backlog';
+      if (this.view === 'payments') return 'Payments';
+      if (this.view === 'year') return String(this.year);
+      if (this.view === 'month') return this.monthNameFull(this.month) + ' ' + this.year;
+      if (this.view === 'projects') return 'Projects';
+      const d = parseDate(this.day);
+      return DAYS_FULL[d.getDay()] + ', ' + MONTHS_SHORT[d.getMonth()] + ' ' + d.getDate() + ', ' + d.getFullYear();
+    },
+
+    // ── Task Filtering ─────────────────────
+    isBacklog(t) {
+      return (t.type || 'task') === 'task' && t.priority === 'P3';
+    },
+
+    isPayment(t) {
+      return (t.type || 'task') === 'payment';
+    },
+
+    isRegularTask(t) {
+      return !this.isBacklog(t) && !this.isPayment(t);
+    },
+
+    matchesSearch(t) {
+      if (!this.searchQuery) return true;
+      const q = this.searchQuery.toLowerCase();
+      return t.title.toLowerCase().includes(q) || (t.notes && t.notes.toLowerCase().includes(q));
+    },
+
+    isVisible(t) {
+      if (!this.showDone && t.done && !this.recentlyDone[t.id]) return false;
+      return this.matchesSearch(t);
+    },
+
+    backlogTasks() {
+      return this.tasks
+        .filter(t => this.isVisible(t) && this.isBacklog(t))
+        .sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0));
+    },
+
+    paymentTasks() {
+      return this.tasks
+        .filter(t => this.isVisible(t) && this.isPayment(t))
+        .sort((a, b) => a.date.localeCompare(b.date));
+    },
+
+    paymentsByMonth() {
+      const payments = this.paymentTasks();
+      const groups = [];
+      let current = null;
+      for (const t of payments) {
+        const d = parseDate(t.date);
+        const key = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0');
+        if (!current || current.key !== key) {
+          current = { key, label: MONTHS_SHORT[d.getMonth()] + ' ' + d.getFullYear(), tasks: [], total: 0 };
+          groups.push(current);
+        }
+        current.tasks.push(t);
+        const amt = parseFloat(t.amount);
+        if (!isNaN(amt)) current.total += amt;
+      }
+      return groups;
+    },
+
+    allTasks() {
+      return this.tasks
+        .filter(t => this.isVisible(t) && this.isRegularTask(t))
+        .sort((a, b) => {
+          if (a.date !== b.date) return a.date < b.date ? -1 : 1;
+          return taskSort(a, b);
+        });
+    },
+
+    tasksForDate(dateStr) {
+      return this.tasks
+        .filter(t => this.isVisible(t) && this.isRegularTask(t) && t.date === dateStr)
+        .sort(taskSort);
+    },
+
+    tasksForMonth(year, month) {
+      return this.tasks.filter(t => {
+        if (!this.isVisible(t) || !this.isRegularTask(t)) return false;
+        const d = parseDate(t.date);
+        return d.getFullYear() === year && d.getMonth() === month;
+      }).sort(taskSort);
+    },
+
+    monthsWithTasks(year) {
+      const months = [];
+      for (let m = 0; m < 12; m++) {
+        const tasks = this.tasksForMonth(year, m);
+        if (tasks.length > 0) months.push({ index: m, tasks: tasks });
+      }
+      return months;
+    },
+
+    // ── Calendar Data ──────────────────────
+    getCalendarData(year, month) {
+      const first = new Date(year, month, 1);
+      const last = new Date(year, month + 1, 0);
+      const startDow = (first.getDay() + 6) % 7;
+      const daysInMonth = last.getDate();
+      const weeks = [];
+      let week = [];
+
+      for (let i = 0; i < startDow; i++) {
+        week.push({ day: 0 });
+      }
+
+      for (let d = 1; d <= daysInMonth; d++) {
+        const dateStr = year + '-' + String(month+1).padStart(2,'0') + '-' + String(d).padStart(2,'0');
+        const dayTasks = this.tasks.filter(t => t.date === dateStr && this.isRegularTask(t));
+        const active = dayTasks.filter(t => !t.done);
+        let topPriority = null;
+        if (dayTasks.length > 0) {
+          topPriority = [...dayTasks].sort((a,b) => (PRIORITY_ORDER[a.priority]??99) - (PRIORITY_ORDER[b.priority]??99))[0].priority;
+        }
+        const hasDeadline = dayTasks.some(t => t.type === 'deadline');
+        const hasReminder = dayTasks.some(t => t.type === 'reminder');
+        const hasRecurring = dayTasks.some(t => t.recurrence);
+        week.push({
+          day: d,
+          dateStr: dateStr,
+          isToday: dateStr === todayStr,
+          count: dayTasks.length,
+          remaining: active.length,
+          topPriority: topPriority,
+          hasDeadline,
+          hasReminder,
+          hasRecurring,
+        });
+        if (week.length === 7) { weeks.push(week); week = []; }
+      }
+
+      if (week.length > 0) {
+        while (week.length < 7) week.push({ day: 0 });
+        weeks.push(week);
+      }
+      return weeks;
+    },
+
+    // ── Grouping ───────────────────────────
+    groupByDay(tasks) {
+      const groups = {};
+      for (const t of tasks) {
+        if (!groups[t.date]) groups[t.date] = [];
+        groups[t.date].push(t);
+      }
+      return Object.keys(groups).sort().map(d => ({ date: d, tasks: groups[d] }));
+    },
+
+    // ── Helpers ─────────────────────────────
+    priorityColor(p) {
+      return {P0:'#ef4444', P1:'#f59e0b', P2:'#6366f1', P3:'#6b7280'}[p] || '#6b7280';
+    },
+
+    monthNameShort(i) { return MONTHS_SHORT[i]; },
+    monthNameFull(i) { return MONTHS_FULL[i]; },
+
+    shortDate(dateStr) {
+      const d = parseDate(dateStr);
+      return String(d.getMonth()+1).padStart(2,'0') + '/' + String(d.getDate()).padStart(2,'0');
+    },
+
+    formatDayHeader(dateStr) {
+      const d = parseDate(dateStr);
+      return DAYS_SHORT[d.getDay()] + ' ' + String(d.getMonth()+1).padStart(2,'0') + '/' + String(d.getDate()).padStart(2,'0');
+    },
+
+    formatDayHeaderLong(dateStr) {
+      const d = parseDate(dateStr);
+      return DAYS_FULL[d.getDay()] + ', ' + MONTHS_SHORT[d.getMonth()] + ' ' + d.getDate();
+    },
+
+    recurrenceLabel(task) {
+      if (!task.recurrence) return '';
+      const r = task.recurrence;
+      if (r.type === 'weekly') return 'Every ' + (DAYS_MON_FIRST[r.dow] || 'week');
+      if (r.type === 'monthly') return 'Every month on the ' + ordinal(r.day);
+      if (r.type === 'yearly') return 'Every year on ' + MONTHS_SHORT[r.month - 1] + ' ' + r.day;
+      return 'Recurring';
+    },
+
+    // ── Recurrence Form Helpers ─────────────
+    updateRecurrenceFromForm() {
+      if (this.form.recurrenceType === 'none') {
+        this.form.recurrence = null;
+        return;
+      }
+      const d = parseDate(this.form.date || todayStr);
+      if (this.form.recurrenceType === 'weekly') {
+        this.form.recurrence = { type: 'weekly', dow: (d.getDay() + 6) % 7 };
+      } else if (this.form.recurrenceType === 'monthly') {
+        this.form.recurrence = { type: 'monthly', day: d.getDate() };
+      } else if (this.form.recurrenceType === 'yearly') {
+        this.form.recurrence = { type: 'yearly', month: d.getMonth() + 1, day: d.getDate() };
+      }
+    },
+
+    recurrenceHint() {
+      if (this.form.recurrenceType === 'none' || !this.form.date) return '';
+      const d = parseDate(this.form.date);
+      if (this.form.recurrenceType === 'weekly') return 'Every ' + DAYS_FULL[d.getDay()];
+      if (this.form.recurrenceType === 'monthly') return 'Every month on the ' + ordinal(d.getDate());
+      if (this.form.recurrenceType === 'yearly') return 'Every year on ' + MONTHS_FULL[d.getMonth()] + ' ' + d.getDate();
+      return '';
+    },
+
+    // ── Modal ──────────────────────────────
+    openAddModal() {
+      this.form = { title: '', date: todayStr, priority: 'P2', notes: '', type: 'task', recurrenceType: 'none', recurrence: null, amount: '' };
+      if (this.view === 'day') {
+        this.form.date = this.day;
+      } else if (this.view === 'month') {
+        if (today.getFullYear() === this.year && today.getMonth() === this.month) {
+          this.form.date = todayStr;
+        } else {
+          this.form.date = this.year + '-' + String(this.month+1).padStart(2,'0') + '-01';
+        }
+      }
+      this.showModal = true;
+      this.$nextTick(() => { this.$refs.titleInput && this.$refs.titleInput.focus(); });
+    },
+
+    openProjectModal() {
+      this.projectForm = { name: '', repo: '', description: '' };
+      this.showProjectModal = true;
+      this.$nextTick(() => { this.$refs.projectNameInput && this.$refs.projectNameInput.focus(); });
+    },
+
+    // ── Backlog Drag & Drop ────────────────
+    _backlogSortables: {},
+    _initBacklogSortable(refName) {
+      const el = this.$refs[refName];
+      if (!el || this._backlogSortables[refName]) return;
+      const self = this;
+      this._backlogSortables[refName] = new Sortable(el, {
+        animation: 150,
+        ghostClass: 'sortable-ghost',
+        handle: '.drag-handle',
+        onEnd() {
+          const ids = [...el.children]
+            .map(c => c.dataset?.id)
+            .filter(Boolean);
+          ids.forEach((id, i) => {
+            const t = self.tasks.find(t => t.id === id);
+            if (t) t.sort_order = i;
+          });
+          fetch('/api/tasks/reorder', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ ids }),
+          });
+        },
+      });
+    },
+    initBacklogViewSortable() { this._initBacklogSortable('backlogViewList'); },
+    initBacklogSortable() { this._initBacklogSortable('backlogList'); },
+
+    // ── Subtask Drag & Drop ─────────────────
+    _subtaskSortables: {},
+    initSubtaskSortable(el, taskId) {
+      if (!el || this._subtaskSortables[taskId]) return;
+      const self = this;
+      this._subtaskSortables[taskId] = new Sortable(el, {
+        animation: 150,
+        ghostClass: 'sortable-ghost',
+        handle: '.drag-handle',
+        filter: '.subtask-add',
+        onEnd() {
+          const ids = [...el.querySelectorAll('.subtask-row')]
+            .map(r => r.dataset?.subId)
+            .filter(Boolean);
+          // Reorder locally
+          const task = self.tasks.find(t => t.id === taskId);
+          if (task) {
+            const byId = new Map(task.subtasks.map(s => [s.id, s]));
+            task.subtasks = ids.map(id => byId.get(id)).filter(Boolean);
+          }
+          // Persist
+          fetch('/api/tasks/' + taskId + '/subtasks/reorder', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ ids }),
+          });
+        },
+      });
+    },
+
+    // ── Scroll Priority ───────────────────────
+    _scrollPriorityTimer: null,
+    scrollPriority(task, event) {
+      if (task.done) return;
+      event.preventDefault();
+      const priorities = ['P0', 'P1', 'P2', 'P3'];
+      const idx = priorities.indexOf(task.priority);
+      let next;
+      if (event.deltaY > 0) {
+        next = Math.min(idx + 1, 3); // scroll down = lower priority
+      } else {
+        next = Math.max(idx - 1, 0); // scroll up = higher priority
+      }
+      if (priorities[next] === task.priority) return;
+      task.priority = priorities[next];
+      if (this._scrollPriorityTimer) clearTimeout(this._scrollPriorityTimer);
+      const taskId = task.id;
+      const priority = task.priority;
+      this._scrollPriorityTimer = setTimeout(() => {
+        if (!this.tasks.find(t => t.id === taskId)) return;
+        fetch('/api/tasks/' + taskId, {
+          method: 'PUT',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({ priority }),
+        });
+      }, 100);
+    },
+
+    // ── Toast ──────────────────────────────
+    toast(message, type = 'success', duration = 2500) {
+      this.toastMessage = message;
+      this.toastType = type;
+      this.toastVisible = true;
+      if (this._toastTimer) clearTimeout(this._toastTimer);
+      this._toastTimer = setTimeout(() => { this.toastVisible = false; }, duration);
+    },
+
+    // ── API Helper ─────────────────────────
+    async apiFetch(url, options = {}) {
+      const res = await fetch(url, options);
+      if (!res.ok) {
+        const detail = await res.text().catch(() => 'Request failed');
+        this.toast(detail || 'Request failed (' + res.status + ')', 'error');
+      }
+      return res;
+    },
+
+    // ── Keyboard Shortcuts ─────────────────
+    handleKeydown(event) {
+      const tag = document.activeElement?.tagName;
+      const inInput = tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT';
+
+      // Escape always works
+      if (event.key === 'Escape') {
+        if (this.showModal) { this.showModal = false; return; }
+        if (this.showProjectModal) { this.showProjectModal = false; return; }
+        if (this.editingTaskId) { this.editingTaskId = null; return; }
+        if (this.editingNotesId) { this.editingNotesId = null; return; }
+        if (this.editingSubtaskId) { this.editingSubtaskId = null; return; }
+        if (this.searchQuery) { this.searchQuery = ''; this.$refs.searchInput?.blur(); return; }
+        return;
+      }
+
+      // Skip other shortcuts when typing in inputs
+      if (inInput) return;
+
+      if (event.key === 'n') {
+        event.preventDefault();
+        this.view === 'projects' ? this.openProjectModal() : this.openAddModal();
+      } else if (event.key === '1') {
+        this.switchView('all');
+      } else if (event.key === '2') {
+        this.switchView('month');
+      } else if (event.key === '3') {
+        this.switchView('day');
+      } else if (event.key === '4') {
+        this.switchView('backlog');
+      } else if (event.key === '5') {
+        this.switchView('payments');
+      } else if (event.key === '/') {
+        event.preventDefault();
+        this.$refs.searchInput?.focus();
+      }
+    },
+  };
+}
+
+// Global helper
+function ordinal(n) {
+  const s = ['th','st','nd','rd'];
+  const v = n % 100;
+  return n + (s[(v-20)%10] || s[v] || s[0]);
+}
+</script>
+<script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.6/Sortable.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.14.8/dist/cdn.min.js"></script>
+</body>
+</html>

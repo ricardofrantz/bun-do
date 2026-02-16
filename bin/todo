@@ -1,0 +1,101 @@
+#!/usr/bin/env bash
+# Todo app service manager
+# Usage: todo [start|stop|restart|status]
+set -euo pipefail
+
+REPO_DIR="$(cd "$(dirname "$0")/.." && pwd)"
+PORT="${TODO_PORT:-8000}"
+LOGDIR="$REPO_DIR/logfile"
+mkdir -p "$LOGDIR"
+PIDFILE="$LOGDIR/todo.pid"
+LOGFILE="$LOGDIR/todo.log"
+
+_pid() {
+  [[ -f "$PIDFILE" ]] && cat "$PIDFILE" || echo ""
+}
+
+_running() {
+  local pid=$(_pid)
+  [[ -n "$pid" ]] && kill -0 "$pid" 2>/dev/null
+}
+
+_stop() {
+  if _running; then
+    local pid=$(_pid)
+    kill "$pid" 2>/dev/null
+    # Wait up to 3s for clean exit
+    for i in {1..12}; do
+      kill -0 "$pid" 2>/dev/null || break
+      sleep 0.25
+    done
+    # Force kill if still alive
+    kill -0 "$pid" 2>/dev/null && kill -9 "$pid" 2>/dev/null
+    rm -f "$PIDFILE"
+    echo "[todo] stopped (pid $pid)"
+  else
+    # Clean up stale pidfile or port holder
+    rm -f "$PIDFILE"
+    if lsof -ti:"$PORT" &>/dev/null; then
+      kill "$(lsof -ti:"$PORT")" 2>/dev/null || true
+      sleep 0.3
+      echo "[todo] killed orphan process on port $PORT"
+    fi
+  fi
+}
+
+_start() {
+  if _running; then
+    echo "[todo] already running (pid $(_pid)) on http://localhost:$PORT"
+    return 0
+  fi
+
+  if [[ ! -f "$REPO_DIR/server.ts" ]]; then
+    echo "[todo] server.ts not found in $REPO_DIR" >&2
+    exit 1
+  fi
+
+  # Kill anything squatting the port
+  if lsof -ti:"$PORT" &>/dev/null; then
+    kill "$(lsof -ti:"$PORT")" 2>/dev/null || true
+    sleep 0.3
+  fi
+
+  cd "$REPO_DIR"
+  nohup bun run server.ts --port="$PORT" >> "$LOGFILE" 2>&1 &
+  echo $! > "$PIDFILE"
+
+  # Wait for server ready
+  for i in {1..20}; do
+    curl -s "http://localhost:$PORT/" >/dev/null 2>&1 && break
+    sleep 0.25
+  done
+
+  if _running; then
+    echo "[todo] started (pid $(_pid)) on http://localhost:$PORT"
+    echo "[todo] log: $LOGFILE"
+  else
+    echo "[todo] failed to start — check $LOGFILE" >&2
+    rm -f "$PIDFILE"
+    exit 1
+  fi
+}
+
+_status() {
+  if _running; then
+    echo "[todo] running (pid $(_pid)) on http://localhost:$PORT"
+  else
+    rm -f "$PIDFILE"
+    echo "[todo] not running"
+  fi
+}
+
+case "${1:-start}" in
+  start)   _start ;;
+  stop)    _stop ;;
+  restart) _stop; _start ;;
+  status)  _status ;;
+  *)
+    echo "Usage: todo [start|stop|restart|status]" >&2
+    exit 1
+    ;;
+esac

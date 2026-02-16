@@ -1,0 +1,53 @@
+[
+  {
+    "id": "example-001",
+    "title": "Try the month view calendar",
+    "date": "2026-02-16",
+    "priority": "P1",
+    "notes": "Click Month tab → click a day → see tasks",
+    "done": false,
+    "type": "task",
+    "subtasks": [
+      { "id": "sub-001", "title": "Click a calendar cell", "done": false },
+      { "id": "sub-002", "title": "Expand the subtasks", "done": false }
+    ],
+    "recurrence": null,
+    "sort_order": 0
+  },
+  {
+    "id": "example-002",
+    "title": "Project deadline example",
+    "date": "2026-03-01",
+    "priority": "P0",
+    "notes": "Red dot on calendar — deadlines stand out",
+    "done": false,
+    "type": "deadline",
+    "subtasks": [],
+    "recurrence": null,
+    "sort_order": 0
+  },
+  {
+    "id": "example-003",
+    "title": "Weekly review",
+    "date": "2026-02-16",
+    "priority": "P2",
+    "notes": "Mark done → next week auto-created",
+    "done": false,
+    "type": "reminder",
+    "subtasks": [],
+    "recurrence": { "type": "weekly", "dow": 0 },
+    "sort_order": 0
+  },
+  {
+    "id": "example-004",
+    "title": "Backlog item (drag to reorder)",
+    "date": "2026-02-16",
+    "priority": "P3",
+    "notes": "P3 tasks appear in the backlog panel",
+    "done": false,
+    "type": "task",
+    "subtasks": [],
+    "recurrence": null,
+    "sort_order": 0
+  }
+]

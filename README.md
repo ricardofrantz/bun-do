@@ -1,98 +1,125 @@
-# Todo + Calendar (Hybrid Human + AI Agenda)
+# bun-do
 
-This repository stores a combined planning system: a personal visual agenda and a structured task list that can be edited by humans and automation (Claude/Codex).
+A fast, local-first todo app built on [Bun](https://bun.sh). One TypeScript file, one HTML file, zero dependencies.
 
-## Overview
+![Bun](https://img.shields.io/badge/runtime-Bun-f9f1e1?logo=bun)
+![TypeScript](https://img.shields.io/badge/lang-TypeScript-3178c6?logo=typescript&logoColor=white)
+![Alpine.js](https://img.shields.io/badge/frontend-Alpine.js-77c1d2?logo=alpine.js&logoColor=white)
+![License](https://img.shields.io/badge/license-MIT-blue)
 
-- `app.py` → Streamlit app with year/month/day views.
-- `todo_data.json` → source-of-truth task data.
-- `requirements.txt` → Python dependency list (`streamlit`).
-- `autobkp/bin/todo` → launcher script to start the UI quickly (outside this repo).
+## Why bun-do?
 
-The model is a hybrid:
+Most todo apps want you to sign up, sync to the cloud, or install an Electron app. **bun-do** is different:
 
-- **Calendar mode:** each item has a date and is shown chronologically by month/day.
-- **Todo mode:** each item has `priority`, optional notes, and a completion state.
-- **AI-friendly:** tasks are plain JSON records that can be updated by code/CLI.
+- **Single-file server** — `server.ts` serves both the API and frontend
+- **JSON storage** — tasks and projects live in plain `.json` files you can version, grep, or edit by hand
+- **No build step** — Alpine.js + SortableJS loaded from CDN, no bundler needed
+- **Self-hosted** — runs on `localhost`, your data never leaves your machine
 
-## Data format
+## Features
 
-Each row in `todo_data.json` follows:
+**Views** — All / Year / Month / Day / Backlog / Payments / Projects
 
-```json
-{
-  "id": "uuid4",
-  "title": "task title",
-  "date": "YYYY-MM-DD",
-  "priority": "P0|P1|P2|P3",
-  "notes": "extra details (including time)",
-  "done": false
-}
-```
+**Tasks**
+- Priorities P0 (critical) through P3 (backlog), with optional Eisenhower matrix labels
+- Types: task, deadline, reminder, payment
+- Recurring: weekly, monthly, yearly with auto-creation on completion
+- Overdue tasks auto-carry to today (payments keep their original due date)
+- Inline click-to-edit for titles, notes, and subtask names
+- Undo delete with 10-second recovery window
 
-Notes:
+**Payments** — Dedicated bill/payment tracker with optional amounts, grouped by month with per-month subtotals
 
-- Date is the anchor used by the calendar.
-- Priority is sorted as `P0` (highest) to `P3` (lowest).
-- You can encode extra time in `notes` (for example `13:15`, `afternoon`).
-- `done` is used by the UI to mark completion and for filtering.
+**Subtasks** — Per-task checklists with drag-and-drop reorder
 
-## Local usage
+**Projects** — Lightweight project tracker with timestamped progress log entries
 
-Run locally from repo root:
+**UX**
+- Keyboard shortcuts: `n` new task, `1`–`5` switch views, `/` search, `Esc` dismiss
+- Live search across task titles and notes
+- Overdue count badge
+- Adjustable font size (A-/A+)
+- Error toasts on failed API calls
+- Light / dark theme
 
-```bash
-uv run streamlit run app.py
-```
-
-Or via helper launcher:
+## Quick start
 
 ```bash
-todo
+git clone https://github.com/ricardofrantz/bun-do.git
+cd bun-do
+bun install
+bun run dev     # hot reload on :8000
 ```
 
-You can override host and port:
+Or without hot reload:
 
 ```bash
-TODO_HOST=0.0.0.0 TODO_PORT=8600 todo
+bun run start   # plain server on :8000
 ```
 
-The app applies a rollover rule: unfinished items from past dates are moved to today on each run.
-
-## Human workflow
-
-1. Open the Streamlit interface.
-2. Add or update items with date, title, priority, and notes.
-3. Check boxes to mark completion.
-4. Use year/month/day drill-down to keep context and detail separate.
-
-## AI/Codex workflow
-
-1. Use the same JSON structure to add/update tasks in `todo_data.json`.
-2. Commit edits as semantic, small changes.
-3. Use clear titles and notes so the UI remains readable.
-
-## GitHub backup workflow
-
-This repo is tracked with GitHub and serves as backup/version history.
+### Background service
 
 ```bash
-git status
-git add todo_data.json app.py README.md
-git commit -m "chore: update agenda"
-git push
+./bin/todo              # start
+./bin/todo status       # check
+./bin/todo stop         # stop
+./bin/todo restart      # restart
 ```
 
-If you only modify data while talking to AI, keep the workflow narrow:
+## Configuration
+
+| Variable | Default | Description |
+|---|---|---|
+| `TODO_PORT` | `8000` | Server port |
+| `TODO_DATA_DIR` | `./data` | Directory for JSON data files |
 
 ```bash
-git add todo_data.json
-git commit -m "data: add/update agenda items"
-git push
+TODO_PORT=9000 TODO_DATA_DIR=~/my-tasks bun run start
 ```
 
-## Repository intent
+## Data
 
-- Keep `todo_data.json` as the canonical schedule source.
-- Keep `app.py` as the canonical visual layer.
-- Use concise commits for traceability (especially when AI updates tasks).
+All data is plain JSON in `TODO_DATA_DIR`:
+
+```
+data/
+  tasks.json            # your tasks
+  projects.json         # your projects
+  tasks.example.json    # seed data (committed to repo)
+```
+
+On first run, `tasks.example.json` seeds `tasks.json` if it doesn't exist.
+
+## API
+
+| Method | Endpoint | Description |
+|---|---|---|
+| `GET` | `/api/tasks` | List tasks (auto-carries overdue to today) |
+| `POST` | `/api/tasks` | Create task |
+| `PUT` | `/api/tasks/:id` | Update task |
+| `DELETE` | `/api/tasks/:id` | Delete task |
+| `POST` | `/api/tasks/reorder` | Persist backlog order |
+| `POST` | `/api/tasks/clear-done` | Remove completed tasks |
+| `POST` | `/api/tasks/:id/subtasks` | Add subtask |
+| `PUT` | `/api/tasks/:id/subtasks/:sid` | Update subtask |
+| `DELETE` | `/api/tasks/:id/subtasks/:sid` | Delete subtask |
+| `POST` | `/api/tasks/:id/subtasks/reorder` | Reorder subtasks |
+| `GET` | `/api/projects` | List projects |
+| `POST` | `/api/projects` | Create project |
+| `PUT` | `/api/projects/:id` | Update project |
+| `DELETE` | `/api/projects/:id` | Delete project |
+| `POST` | `/api/projects/:id/entries` | Add log entry |
+| `DELETE` | `/api/projects/:id/entries/:eid` | Delete log entry |
+
+## Stack
+
+| Layer | Tech |
+|---|---|
+| Runtime | [Bun](https://bun.sh) |
+| Server | `Bun.serve()` — zero-dependency HTTP |
+| Frontend | [Alpine.js](https://alpinejs.dev) + [SortableJS](https://sortablejs.github.io/Sortable/) (CDN) |
+| Storage | Flat JSON files |
+
+## License
+
+MIT
