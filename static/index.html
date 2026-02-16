@@ -1856,7 +1856,8 @@ function todoApp() {
 
     // ── Task API ────────────────────────────
     async fetchTasks() {
-      const res = await fetch('/api/tasks');
+      const res = await this.apiFetch('/api/tasks');
+      if (!res.ok) return;
       const data = await res.json();
       this.tasks = data.tasks;
       if (data.carried_over > 0) {
@@ -2066,7 +2067,8 @@ function todoApp() {
 
     // ── Project API ─────────────────────────
     async fetchProjects() {
-      const res = await fetch('/api/projects');
+      const res = await this.apiFetch('/api/projects');
+      if (!res.ok) return;
       const data = await res.json();
       this.projects = data.projects;
     },
@@ -2477,7 +2479,7 @@ function todoApp() {
             const t = self.tasks.find(t => t.id === id);
             if (t) t.sort_order = i;
           });
-          fetch('/api/tasks/reorder', {
+          self.apiFetch('/api/tasks/reorder', {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
             body: JSON.stringify({ ids }),
@@ -2509,7 +2511,7 @@ function todoApp() {
             task.subtasks = ids.map(id => byId.get(id)).filter(Boolean);
           }
           // Persist
-          fetch('/api/tasks/' + taskId + '/subtasks/reorder', {
+          self.apiFetch('/api/tasks/' + taskId + '/subtasks/reorder', {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
             body: JSON.stringify({ ids }),
@@ -2538,7 +2540,7 @@ function todoApp() {
       const priority = task.priority;
       this._scrollPriorityTimer = setTimeout(() => {
         if (!this.tasks.find(t => t.id === taskId)) return;
-        fetch('/api/tasks/' + taskId, {
+        self.apiFetch('/api/tasks/' + taskId, {
           method: 'PUT',
           headers: {'Content-Type': 'application/json'},
           body: JSON.stringify({ priority }),

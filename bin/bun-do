@@ -3,7 +3,7 @@
 # Usage: bun-do [start|stop|restart|status]
 set -euo pipefail
 
-REPO_DIR="$(cd "$(dirname "$0")/.." && pwd)"
+REPO_DIR="$(cd "$(dirname "$(readlink -f "$0")")/.." && pwd)"
 PORT="${TODO_PORT:-8000}"
 LOGDIR="$REPO_DIR/logfile"
 mkdir -p "$LOGDIR"
