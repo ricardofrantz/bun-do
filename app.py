@@ -118,6 +118,13 @@ def priority_chip(priority: str) -> str:
     return f"<span class='priority-chip' style='background:{style['bg']};color:{style['fg']};'>{priority}</span>"
 
 
+def task_sort_key(task: dict) -> tuple[int, str]:
+    return (
+        PRIORITY_ORDER.get(task.get("priority", "P2"), 99),
+        task.get("title", "").lower(),
+    )
+
+
 def section(title: str, subtitle: str = "", motion_index: int = 0) -> None:
     delay = min(motion_index * 0.06, 0.7)
     heading = (
@@ -248,14 +255,17 @@ def render_month(tasks: list[dict], year: int, month: int, show_done: bool) -> N
     for task in grouped:
         by_day[day_key(task)].append(task)
 
-    section(f"{month_abbr[month]} {year}", f"{len(grouped)} items", motion_index=month)
+        section(f"{month_abbr[month]} {year}", f"{len(grouped)} items", motion_index=month)
     for day in sorted(by_day):
         day_dt = iso_to_date(day)
         st.markdown(
             f"<div class='day-header'>{day_dt.strftime('%A, %b %d')}</div>",
             unsafe_allow_html=True,
         )
-        for i, task in enumerate(sorted(by_day[day], key=lambda t: (PRIORITY_ORDER.get(t["priority"], 99), t["title"].lower()), start=1):
+        for i, task in enumerate(
+            sorted(by_day[day], key=task_sort_key),
+            start=1,
+        ):
             render_task_row(task, show_done, i)
 
 
@@ -269,7 +279,10 @@ def render_day(tasks: list[dict], selected_day: date, show_done: bool) -> None:
         return
 
     section(selected_day.strftime("%A, %b %d"), f"{len(day_tasks)} tasks", motion_index=1)
-    for i, task in enumerate(sorted(day_tasks, key=lambda t: (PRIORITY_ORDER.get(t["priority"], 99), t["title"].lower()), start=1):
+    for i, task in enumerate(
+        sorted(day_tasks, key=task_sort_key),
+        start=1,
+    ):
         render_task_row(task, show_done=show_done, motion_index=i)
 
 
