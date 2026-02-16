@@ -202,6 +202,9 @@ years = sorted({iso_to_date(t["date"]).year for t in st.session_state.tasks} | {
 selected_year = st.sidebar.selectbox("Year", years, index=years.index(today.year))
 view = st.sidebar.radio("View", ["Year", "Month", "Day"], index=0)
 show_done = st.sidebar.toggle("Show done", value=False)
+if st.sidebar.button("Reload from disk", help="Re-read todo_data.json from disk"):
+    st.session_state.tasks = load_tasks()
+    st.rerun()
 
 st.sidebar.subheader("Add task")
 with st.sidebar.form("add_task", clear_on_submit=True):
