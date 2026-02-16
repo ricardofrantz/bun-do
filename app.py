@@ -203,6 +203,17 @@ def render_day_view(year: int, selected_day: date, tasks: list[dict], include_do
             render_task_row(task, show_notes=(detail_mode == "Detailed"))
 
 
+def sync_to_current_date(today: date) -> None:
+    last_sync = st.session_state.get("agenda_last_sync")
+    if last_sync == today.isoformat():
+        return
+
+    st.session_state.agenda_last_sync = today.isoformat()
+    st.session_state.current_year = today.year
+    st.session_state.current_month = today.month
+    st.session_state.current_day = today
+
+
 # ---- App state ----
 st.set_page_config(page_title="Year Todo Agenda", page_icon="🗓", layout="wide")
 st.title("Year Todo Agenda")
@@ -214,13 +225,23 @@ today = date.today()
 rolled_count = advance_unfinished_tasks(st.session_state.tasks, today)
 if rolled_count:
     st.caption(f"Carried forward {rolled_count} unfinished task(s) to today ({today}).")
+sync_to_current_date(today)
 
 st.sidebar.header("Controls")
 default_year = today.year
 years = sorted({iso_to_date(task["date"]).year for task in st.session_state.tasks} | {default_year})
-selected_year = st.sidebar.selectbox("Year", years, index=years.index(default_year) if default_year in years else 0)
+st.session_state.setdefault("current_year", default_year)
+selected_year = st.sidebar.selectbox(
+    "Year",
+    years,
+    index=years.index(st.session_state.current_year) if st.session_state.current_year in years else years.index(default_year),
+    key="year_selector",
+)
+st.session_state.current_year = selected_year
 
 st.session_state.setdefault("current_view", "Year overview")
+st.session_state.setdefault("current_month", today.month)
+st.session_state.setdefault("current_day", today)
 view = st.sidebar.radio(
     "Agenda depth",
     ["Year overview", "Month agenda", "Day agenda"],
@@ -268,19 +289,24 @@ else:
         selected_month = st.sidebar.selectbox(
             "Month",
             list(range(1, 13)),
-            index=st.session_state.get("current_month", today.month) - 1,
+            index=st.session_state.current_month - 1,
             format_func=lambda m: month_abbr[m],
             key="month_selector",
         )
+        st.session_state.current_month = selected_month
         render_month_view(selected_year, selected_month, all_tasks, include_done, detail_mode)
     else:
+        default_day = st.session_state.current_day
+        if isinstance(default_day, str):
+            default_day = iso_to_date(default_day)
         selected_day = st.sidebar.date_input(
             "Day",
-            value=today,
+            value=default_day,
             min_value=date(selected_year, 1, 1),
             max_value=date(selected_year, 12, 31),
             key="day_selector",
         )
+        st.session_state.current_day = selected_day
         if selected_day.year != selected_year:
             selected_day = selected_day.replace(year=selected_year)
         render_day_view(selected_day.year, selected_day, all_tasks, include_done, detail_mode)
