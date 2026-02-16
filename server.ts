@@ -63,6 +63,25 @@ const PRIORITY_LABELS = ["P0", "P1", "P2", "P3"];
 const PRIORITY_ORDER: Record<string, number> = { P0: 0, P1: 1, P2: 2, P3: 3 };
 const TASK_TYPES = ["task", "deadline", "reminder", "payment"];
 const RECURRENCE_TYPES = ["weekly", "monthly", "yearly"];
+const PROJECT_STATUSES = ["active", "paused", "completed", "archived"];
+
+function sanitizeRecurrence(raw: unknown): Recurrence | null {
+  if (!raw || typeof raw !== "object") return null;
+  const r = raw as Record<string, unknown>;
+  if (!RECURRENCE_TYPES.includes(r.type as string)) return null;
+  return {
+    type: r.type as Recurrence["type"],
+    ...(r.day !== undefined && { day: Number(r.day) }),
+    ...(r.dow !== undefined && { dow: Number(r.dow) }),
+    ...(r.month !== undefined && { month: Number(r.month) }),
+  };
+}
+
+function validateIds(raw: unknown): string[] | null {
+  if (!Array.isArray(raw)) return null;
+  if (!raw.every((id) => typeof id === "string")) return null;
+  return raw;
+}
 
 const MIME: Record<string, string> = {
   ".html": "text/html",
@@ -284,10 +303,7 @@ async function handleCreateTask(req: Request): Promise<Response> {
   const body = await req.json();
   const tasks = loadTasks();
   const taskType = TASK_TYPES.includes(body.type) ? body.type : "task";
-  let recurrence: Recurrence | null = null;
-  if (body.recurrence && RECURRENCE_TYPES.includes(body.recurrence?.type)) {
-    recurrence = body.recurrence;
-  }
+  const recurrence = sanitizeRecurrence(body.recurrence);
   const newTask: Task = {
     id: crypto.randomUUID(),
     title: String(body.title ?? "").trim() || "Untitled task",
@@ -308,7 +324,8 @@ async function handleCreateTask(req: Request): Promise<Response> {
 
 async function handleReorderTasks(req: Request): Promise<Response> {
   const body = await req.json();
-  const ids: string[] = body.ids;
+  const ids = validateIds(body.ids);
+  if (!ids) return json({ detail: "ids must be a string array" }, 400);
   const tasks = loadTasks();
   const idToOrder: Record<string, number> = {};
   ids.forEach((id, i) => (idToOrder[id] = i));
@@ -353,11 +370,7 @@ async function handleUpdateTask(taskId: string, req: Request): Promise<Response>
         task.amount = String(body.amount).trim();
       }
       if (body.recurrence !== undefined) {
-        if (RECURRENCE_TYPES.includes(body.recurrence?.type)) {
-          task.recurrence = body.recurrence;
-        } else {
-          task.recurrence = null;
-        }
+        task.recurrence = sanitizeRecurrence(body.recurrence);
       }
       if (body.done !== undefined) {
         const wasDone = task.done;
@@ -443,7 +456,8 @@ function handleDeleteSubtask(taskId: string, subId: string): Response {
 
 async function handleReorderSubtasks(taskId: string, req: Request): Promise<Response> {
   const body = await req.json();
-  const ids: string[] = body.ids;
+  const ids = validateIds(body.ids);
+  if (!ids) return json({ detail: "ids must be a string array" }, 400);
   const tasks = loadTasks();
   for (const task of tasks) {
     if (task.id === taskId) {
@@ -494,7 +508,7 @@ async function handleUpdateProject(projectId: string, req: Request): Promise<Res
       if (body.repo !== undefined) {
         proj.repo = String(body.repo).trim();
       }
-      if (body.status !== undefined) {
+      if (body.status !== undefined && PROJECT_STATUSES.includes(body.status)) {
         proj.status = body.status;
       }
       if (body.description !== undefined) {
