@@ -691,4 +691,4 @@ const server = Bun.serve({
   fetch: handleRequest,
 });
 
-console.log(`[todo] listening on http://localhost:${server.port}`);
+console.log(`[bun-do] listening on http://localhost:${server.port}`);

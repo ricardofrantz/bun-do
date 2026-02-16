@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# Todo app service manager
-# Usage: todo [start|stop|restart|status]
+# bun-do service manager
+# Usage: bun-do [start|stop|restart|status]
 set -euo pipefail
 
 REPO_DIR="$(cd "$(dirname "$0")/.." && pwd)"
@@ -31,26 +31,26 @@ _stop() {
     # Force kill if still alive
     kill -0 "$pid" 2>/dev/null && kill -9 "$pid" 2>/dev/null
     rm -f "$PIDFILE"
-    echo "[todo] stopped (pid $pid)"
+    echo "[bun-do] stopped (pid $pid)"
   else
     # Clean up stale pidfile or port holder
     rm -f "$PIDFILE"
     if lsof -ti:"$PORT" &>/dev/null; then
       kill "$(lsof -ti:"$PORT")" 2>/dev/null || true
       sleep 0.3
-      echo "[todo] killed orphan process on port $PORT"
+      echo "[bun-do] killed orphan process on port $PORT"
     fi
   fi
 }
 
 _start() {
   if _running; then
-    echo "[todo] already running (pid $(_pid)) on http://localhost:$PORT"
+    echo "[bun-do] already running (pid $(_pid)) on http://localhost:$PORT"
     return 0
   fi
 
   if [[ ! -f "$REPO_DIR/server.ts" ]]; then
-    echo "[todo] server.ts not found in $REPO_DIR" >&2
+    echo "[bun-do] server.ts not found in $REPO_DIR" >&2
     exit 1
   fi
 
@@ -71,10 +71,10 @@ _start() {
   done
 
   if _running; then
-    echo "[todo] started (pid $(_pid)) on http://localhost:$PORT"
-    echo "[todo] log: $LOGFILE"
+    echo "[bun-do] started (pid $(_pid)) on http://localhost:$PORT"
+    echo "[bun-do] log: $LOGFILE"
   else
-    echo "[todo] failed to start — check $LOGFILE" >&2
+    echo "[bun-do] failed to start — check $LOGFILE" >&2
     rm -f "$PIDFILE"
     exit 1
   fi
@@ -82,10 +82,10 @@ _start() {
 
 _status() {
   if _running; then
-    echo "[todo] running (pid $(_pid)) on http://localhost:$PORT"
+    echo "[bun-do] running (pid $(_pid)) on http://localhost:$PORT"
   else
     rm -f "$PIDFILE"
-    echo "[todo] not running"
+    echo "[bun-do] not running"
   fi
 }
 
@@ -95,7 +95,7 @@ case "${1:-start}" in
   restart) _stop; _start ;;
   status)  _status ;;
   *)
-    echo "Usage: todo [start|stop|restart|status]" >&2
+    echo "Usage: bun-do [start|stop|restart|status]" >&2
     exit 1
     ;;
 esac

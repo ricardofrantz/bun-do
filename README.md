@@ -60,10 +60,10 @@ bun run start   # plain server on :8000
 ### Background service
 
 ```bash
-./bin/todo              # start
-./bin/todo status       # check
-./bin/todo stop         # stop
-./bin/todo restart      # restart
+./bin/bun-do              # start
+./bin/bun-do status       # check
+./bin/bun-do stop         # stop
+./bin/bun-do restart      # restart
 ```
 
 ## Configuration

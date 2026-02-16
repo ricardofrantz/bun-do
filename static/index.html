@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Todo</title>
+<title>bun-do</title>
 <link rel="icon" href="data:,">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
@@ -1056,7 +1056,7 @@ html.light input[type="date"]::-webkit-calendar-picker-indicator {
 
   <!-- Navbar -->
   <nav class="navbar">
-    <span class="nav-logo">Todo</span>
+    <span class="nav-logo">bun-do</span>
     <div class="nav-center">
       <button class="view-tab" :class="{ active: view === 'all' }" @click="switchView('all')">All<span class="overdue-badge" x-show="overdueCount() > 0" x-text="overdueCount()"></span></button>
       <button class="view-tab" :class="{ active: view === 'year' }" @click="switchView('year')">Year</button>
