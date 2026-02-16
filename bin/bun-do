@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # bun-do service manager
-# Usage: bun-do [start|stop|restart|status]
+# Usage: bun-do [start|stop|restart|status] [--example]
 set -euo pipefail
 
 REPO_DIR="$(cd "$(dirname "$(readlink -f "$0")")/.." && pwd)"
@@ -9,6 +9,27 @@ LOGDIR="$REPO_DIR/logfile"
 mkdir -p "$LOGDIR"
 PIDFILE="$LOGDIR/todo.pid"
 LOGFILE="$LOGDIR/todo.log"
+TASKS_PATH="$REPO_DIR/data/tasks.json"
+EXAMPLE_TASKS_PATH="$REPO_DIR/data/tasks.example.json"
+
+COMMAND="${1:-start}"
+EXAMPLE_MODE=false
+
+for arg in "$@"; do
+  case "$arg" in
+    --example)
+      EXAMPLE_MODE=true
+      ;;
+    start|stop|restart|status)
+      COMMAND="$arg"
+      ;;
+    -h|--help)
+      echo "Usage: bun-do [start|stop|restart|status] [--example]"
+      echo "  --example  Load data/tasks.example.json when (re)starting"
+      exit 0
+      ;;
+  esac
+done
 
 _pid() {
   [[ -f "$PIDFILE" ]] && cat "$PIDFILE" || echo ""
@@ -44,6 +65,16 @@ _stop() {
 }
 
 _start() {
+  if [[ "$EXAMPLE_MODE" == "true" ]]; then
+    if [[ -f "$EXAMPLE_TASKS_PATH" ]]; then
+      cp "$EXAMPLE_TASKS_PATH" "$TASKS_PATH"
+      echo "[bun-do] loaded example tasks from $EXAMPLE_TASKS_PATH"
+    else
+      echo "[bun-do] example file not found at $EXAMPLE_TASKS_PATH" >&2
+      return 1
+    fi
+  fi
+
   if _running; then
     echo "[bun-do] already running (pid $(_pid)) on http://localhost:$PORT"
     return 0
@@ -89,13 +120,14 @@ _status() {
   fi
 }
 
-case "${1:-start}" in
+case "$COMMAND" in
   start)   _start ;;
   stop)    _stop ;;
   restart) _stop; _start ;;
   status)  _status ;;
   *)
-    echo "Usage: bun-do [start|stop|restart|status]" >&2
+    echo "Usage: bun-do [start|stop|restart|status] [--example]" >&2
+    echo "  --example  Load data/tasks.example.json when (re)starting" >&2
     exit 1
     ;;
 esac

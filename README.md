@@ -64,6 +64,7 @@ bun run start   # plain server on :8000
 ./bin/bun-do status       # check
 ./bin/bun-do stop         # stop
 ./bin/bun-do restart      # restart
+./bin/bun-do restart --example  # restart and reload data/tasks.example.json
 ```
 
 ## Configuration

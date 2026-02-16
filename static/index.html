@@ -1616,6 +1616,7 @@ html.light input[type="date"]::-webkit-calendar-picker-indicator {
                     <input x-show="editingTaskId === task.id" class="task-title-edit" type="text" :value="task.title" @blur="saveTitle(task, $event)" @keydown.enter="$event.target.blur()" @keydown.escape="editingTaskId = null" x-effect="if (editingTaskId === task.id) $nextTick(() => $el.focus())">
                     <div class="task-meta">
                       <span x-text="task.date"></span>
+                      <span class="recurrence-icon" :class="task.recurrence ? task.recurrence.type : ''" :title="task.recurrence ? recurrenceLabel(task) : 'Click to make recurring'" @click="cycleRecurrence(task)" style="cursor:pointer">&#x21bb;</span>
                     </div>
                   </div>
                   <span class="payment-amount" x-show="task.amount" x-text="'$' + task.amount"></span>

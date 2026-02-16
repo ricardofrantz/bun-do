@@ -1,53 +1,537 @@
 [
   {
     "id": "example-001",
-    "title": "Try the month view calendar",
-    "date": "2026-02-16",
+    "title": "Fix bun-do startup script portability",
+    "date": "2026-02-18",
     "priority": "P1",
-    "notes": "Click Month tab → click a day → see tasks",
+    "notes": "Standardize path resolution in bin/bun-do and document a clean reinstall flow.",
     "done": false,
     "type": "task",
     "subtasks": [
-      { "id": "sub-001", "title": "Click a calendar cell", "done": false },
-      { "id": "sub-002", "title": "Expand the subtasks", "done": false }
+      { "id": "sub-001-001", "title": "Audit symlink behavior across repo moves", "done": false },
+      { "id": "sub-001-002", "title": "Add a quick self-check command", "done": false },
+      { "id": "sub-001-003", "title": "Verify TODO_PORT override still works", "done": false }
     ],
     "recurrence": null,
-    "sort_order": 0
+    "sort_order": 0,
+    "amount": ""
   },
   {
     "id": "example-002",
-    "title": "Project deadline example",
-    "date": "2026-03-01",
+    "title": "Qtrade Prefect deployment smoke test",
+    "date": "2026-02-20",
     "priority": "P0",
-    "notes": "Red dot on calendar — deadlines stand out",
+    "notes": "Run the end-to-end flow and save the successful command output in qtrade notes.",
     "done": false,
     "type": "deadline",
-    "subtasks": [],
+    "subtasks": [
+      { "id": "sub-002-001", "title": "Start local agent", "done": false },
+      { "id": "sub-002-002", "title": "Deploy workflows from catalog", "done": false },
+      { "id": "sub-002-003", "title": "Verify no stale run artifacts", "done": false }
+    ],
     "recurrence": null,
-    "sort_order": 0
+    "sort_order": 0,
+    "amount": ""
   },
   {
     "id": "example-003",
-    "title": "Weekly review",
+    "title": "Weekly planning reset",
     "date": "2026-02-16",
     "priority": "P2",
-    "notes": "Mark done → next week auto-created",
+    "notes": "Run through the open tasks, then clear stale recurring windows.",
     "done": false,
     "type": "reminder",
-    "subtasks": [],
+    "subtasks": [
+      { "id": "sub-003-001", "title": "Close the completed sprint list", "done": false },
+      { "id": "sub-003-002", "title": "Set priorities for upcoming blockers", "done": false }
+    ],
     "recurrence": { "type": "weekly", "dow": 0 },
-    "sort_order": 0
+    "sort_order": 0,
+    "amount": ""
   },
   {
     "id": "example-004",
-    "title": "Backlog item (drag to reorder)",
-    "date": "2026-02-16",
-    "priority": "P3",
-    "notes": "P3 tasks appear in the backlog panel",
+    "title": "Sort out repo rename references in docs",
+    "date": "2026-02-19",
+    "priority": "P1",
+    "notes": "Search for old project slugs and replace in README files and badges.",
     "done": false,
     "type": "task",
+    "subtasks": [
+      { "id": "sub-004-001", "title": "Patch badge image links", "done": false },
+      { "id": "sub-004-002", "title": "Update install commands", "done": false }
+    ],
+    "recurrence": null,
+    "sort_order": 0,
+    "amount": ""
+  },
+  {
+    "id": "example-005",
+    "title": "Pay host + domain bill",
+    "date": "2026-02-25",
+    "priority": "P1",
+    "notes": "Monthly operational costs, keep receipts in sync with treasury notes.",
+    "done": false,
+    "type": "payment",
     "subtasks": [],
     "recurrence": null,
-    "sort_order": 0
+    "sort_order": 0,
+    "amount": "129.00"
+  },
+  {
+    "id": "example-006",
+    "title": "Backlog grooming and re-prioritization",
+    "date": "2026-02-17",
+    "priority": "P3",
+    "notes": "Reorder by impact and push speculative ideas to Q2 projects.",
+    "done": false,
+    "type": "task",
+    "subtasks": [
+      { "id": "sub-006-001", "title": "Review P3 task titles", "done": false },
+      { "id": "sub-006-002", "title": "Drop stale one-off experiments", "done": false },
+      { "id": "sub-006-003", "title": "Move high-risk ideas to notes", "done": false }
+    ],
+    "recurrence": null,
+    "sort_order": 0,
+    "amount": ""
+  },
+  {
+    "id": "example-007",
+    "title": "Monthly dependency audit (bun-do + shared scripts)",
+    "date": "2026-03-01",
+    "priority": "P0",
+    "notes": "Track updates, security advisories, and lockfile churn.",
+    "done": false,
+    "type": "deadline",
+    "subtasks": [
+      { "id": "sub-007-001", "title": "Check bun and TypeScript compatibility", "done": false },
+      { "id": "sub-007-002", "title": "Review CDN script versions", "done": false },
+      { "id": "sub-007-003", "title": "Update changelog summary", "done": false }
+    ],
+    "recurrence": { "type": "monthly", "day": 1 },
+    "sort_order": 0,
+    "amount": ""
+  },
+  {
+    "id": "example-008",
+    "title": "Prepare qtrade benchmark harness snapshot",
+    "date": "2026-02-21",
+    "priority": "P1",
+    "notes": "Create a reproducible runbook for the next profiling session.",
+    "done": false,
+    "type": "task",
+    "subtasks": [
+      { "id": "sub-008-001", "title": "Pin environment metadata", "done": false },
+      { "id": "sub-008-002", "title": "Capture baseline metrics", "done": false },
+      { "id": "sub-008-003", "title": "Store command outputs under notes", "done": false }
+    ],
+    "recurrence": null,
+    "sort_order": 0,
+    "amount": ""
+  },
+  {
+    "id": "example-009",
+    "title": "Migrate old Streamlit artifacts",
+    "date": "2026-02-14",
+    "priority": "P2",
+    "notes": "Remove leftover app.py/requirements references from shell docs.",
+    "done": true,
+    "type": "task",
+    "subtasks": [
+      { "id": "sub-009-001", "title": "Check startup docs", "done": true },
+      { "id": "sub-009-002", "title": "Archive old screenshots", "done": true }
+    ],
+    "recurrence": null,
+    "sort_order": 0,
+    "amount": ""
+  },
+  {
+    "id": "example-010",
+    "title": "Monthly finance close",
+    "date": "2026-03-01",
+    "priority": "P1",
+    "notes": "Reconcile invoices and verify outstanding payment tasks are tagged.",
+    "done": false,
+    "type": "reminder",
+    "subtasks": [
+      { "id": "sub-010-001", "title": "Recheck recurring payments", "done": false },
+      { "id": "sub-010-002", "title": "Upload expense summary", "done": false }
+    ],
+    "recurrence": { "type": "monthly", "day": 1 },
+    "sort_order": 0,
+    "amount": ""
+  },
+  {
+    "id": "example-011",
+    "title": "Investigate microgpt benchmark regression",
+    "date": "2026-02-17",
+    "priority": "P0",
+    "notes": "Compare current and baseline GPU timings; keep only reproducible commands in notes.",
+    "done": false,
+    "type": "task",
+    "subtasks": [
+      { "id": "sub-011-001", "title": "Collect failing profile snippet", "done": false },
+      { "id": "sub-011-002", "title": "Validate dataset path assumptions", "done": false },
+      { "id": "sub-011-003", "title": "Publish result packet to notebook", "done": false }
+    ],
+    "recurrence": null,
+    "sort_order": 0,
+    "amount": ""
+  },
+  {
+    "id": "example-012",
+    "title": "Fix Subtask drag behavior on mobile",
+    "date": "2026-02-24",
+    "priority": "P3",
+    "notes": "Recheck touch target size and SortableJS constraints.",
+    "done": false,
+    "type": "task",
+    "subtasks": [
+      { "id": "sub-012-001", "title": "Capture phone dimensions", "done": false },
+      { "id": "sub-012-002", "title": "Test in both portrait + landscape", "done": false }
+    ],
+    "recurrence": null,
+    "sort_order": 0,
+    "amount": ""
+  },
+  {
+    "id": "example-013",
+    "title": "Pay domain + SSL renewal",
+    "date": "2026-03-10",
+    "priority": "P1",
+    "notes": "Annual rotation, keep renewal certificate in secure archive.",
+    "done": false,
+    "type": "payment",
+    "subtasks": [],
+    "recurrence": { "type": "yearly", "month": 3, "day": 10 },
+    "sort_order": 0,
+    "amount": "89.00"
+  },
+  {
+    "id": "example-014",
+    "title": "Nanobook walk-forward integrity review",
+    "date": "2026-02-22",
+    "priority": "P1",
+    "notes": "Validate split boundaries and checkpoint persistence after recent refactors.",
+    "done": false,
+    "type": "task",
+    "subtasks": [
+      { "id": "sub-014-001", "title": "Run small deterministic reproduction", "done": false },
+      { "id": "sub-014-002", "title": "Verify no data leakage in splits", "done": false },
+      { "id": "sub-014-003", "title": "Document remediation steps", "done": false }
+    ],
+    "recurrence": null,
+    "sort_order": 0,
+    "amount": ""
+  },
+  {
+    "id": "example-015",
+    "title": "Check fenicsx CHT branch for solver drift",
+    "date": "2026-02-23",
+    "priority": "P1",
+    "notes": "Verify preconditioner selection and timeout handling after environment changes.",
+    "done": false,
+    "type": "task",
+    "subtasks": [
+      { "id": "sub-015-001", "title": "Run condition-number spot checks", "done": false },
+      { "id": "sub-015-002", "title": "Track mesh size where failures start", "done": false },
+      { "id": "sub-015-003", "title": "Capture reproducible failing case", "done": false }
+    ],
+    "recurrence": null,
+    "sort_order": 0,
+    "amount": ""
+  },
+  {
+    "id": "example-016",
+    "title": "Pay quarterly tax prepayment",
+    "date": "2026-03-20",
+    "priority": "P1",
+    "notes": "Keep treasury note and payment confirmation attached.",
+    "done": false,
+    "type": "payment",
+    "subtasks": [],
+    "recurrence": { "type": "monthly", "day": 20 },
+    "sort_order": 0,
+    "amount": "350.00"
+  },
+  {
+    "id": "example-017",
+    "title": "Security posture annual check",
+    "date": "2026-02-16",
+    "priority": "P0",
+    "notes": "Validate auth, token scope, and backup visibility rules.",
+    "done": false,
+    "type": "reminder",
+    "subtasks": [
+      { "id": "sub-017-001", "title": "Audit service env variables", "done": false },
+      { "id": "sub-017-002", "title": "Run dependency vulnerability scan", "done": false },
+      { "id": "sub-017-003", "title": "Document follow-up exceptions", "done": false }
+    ],
+    "recurrence": { "type": "yearly", "month": 2, "day": 16 },
+    "sort_order": 0,
+    "amount": ""
+  },
+  {
+    "id": "example-018",
+    "title": "Archive stale backlog for repo triage",
+    "date": "2026-02-19",
+    "priority": "P3",
+    "notes": "Use the 30-day rule for stale P3 tasks unless a task is linked to release work.",
+    "done": false,
+    "type": "task",
+    "subtasks": [
+      { "id": "sub-018-001", "title": "Mark tasks for closure", "done": false },
+      { "id": "sub-018-002", "title": "Archive completed entries", "done": false }
+    ],
+    "recurrence": null,
+    "sort_order": 0,
+    "amount": ""
+  },
+  {
+    "id": "example-018a",
+    "title": "Telecom bill",
+    "date": "2026-02-27",
+    "priority": "P1",
+    "notes": "Mobile + fiber invoices, keep statement references in attachments.",
+    "done": false,
+    "type": "payment",
+    "subtasks": [],
+    "recurrence": { "type": "monthly", "day": 27 },
+    "sort_order": 0,
+    "amount": "74.90"
+  },
+  {
+    "id": "example-018b",
+    "title": "ChatGPT subscription",
+    "date": "2026-03-02",
+    "priority": "P1",
+    "notes": "Monthly API tooling subscription renewal.",
+    "done": false,
+    "type": "payment",
+    "subtasks": [],
+    "recurrence": { "type": "monthly", "day": 2 },
+    "sort_order": 0,
+    "amount": "20.00"
+  },
+  {
+    "id": "example-018c",
+    "title": "Rent payment",
+    "date": "2026-02-25",
+    "priority": "P0",
+    "notes": "Monthly rent transfer confirmation and receipt tracking.",
+    "done": false,
+    "type": "payment",
+    "subtasks": [],
+    "recurrence": { "type": "monthly", "day": 25 },
+    "sort_order": 0,
+    "amount": "1200.00"
+  },
+  {
+    "id": "example-019",
+    "title": "Plan 2026 Q1 roadmap review",
+    "date": "2026-03-31",
+    "priority": "P0",
+    "notes": "Final milestone check before monthly board meeting.",
+    "done": false,
+    "type": "deadline",
+    "subtasks": [
+      { "id": "sub-019-001", "title": "Review feature scope per repo", "done": false },
+      { "id": "sub-019-002", "title": "Estimate effort against available capacity", "done": false },
+      { "id": "sub-019-003", "title": "Lock Q2 priorities", "done": false }
+    ],
+    "recurrence": null,
+    "sort_order": 0,
+    "amount": ""
+  },
+  {
+    "id": "example-020",
+    "title": "Token rotation reminder",
+    "date": "2026-02-15",
+    "priority": "P1",
+    "notes": "Rotate service tokens and rotate any stale shared credentials.",
+    "done": false,
+    "type": "reminder",
+    "subtasks": [
+      { "id": "sub-020-001", "title": "Rotate GitHub machine tokens", "done": false },
+      { "id": "sub-020-002", "title": "Revoke stale cloud keys", "done": false }
+    ],
+    "recurrence": { "type": "monthly", "day": 15 },
+    "sort_order": 0,
+    "amount": ""
+  },
+  {
+    "id": "example-021",
+    "title": "Publish bun-do 0.2.0 release notes",
+    "date": "2026-03-03",
+    "priority": "P0",
+    "notes": "Finalize changelog, bump version metadata, and validate npm publish dry-run.",
+    "done": false,
+    "type": "deadline",
+    "subtasks": [
+      { "id": "sub-021-001", "title": "Finalize feature checklist", "done": false },
+      { "id": "sub-021-002", "title": "Run smoke test script", "done": false },
+      { "id": "sub-021-003", "title": "Prepare release tags", "done": false }
+    ],
+    "recurrence": null,
+    "sort_order": 0,
+    "amount": ""
+  },
+  {
+    "id": "example-022",
+    "title": "Weekly startup health check",
+    "date": "2026-02-16",
+    "priority": "P2",
+    "notes": "Run bun-do status, confirm data dir, and verify no orphaned PID.",
+    "done": false,
+    "type": "reminder",
+    "subtasks": [
+      { "id": "sub-022-001", "title": "Check `bun-do status`", "done": false },
+      { "id": "sub-022-002", "title": "Validate log path", "done": false }
+    ],
+    "recurrence": { "type": "weekly", "dow": 0 },
+    "sort_order": 0,
+    "amount": ""
+  },
+  {
+    "id": "example-023",
+    "title": "Audit repository task mapping",
+    "date": "2026-02-21",
+    "priority": "P1",
+    "notes": "Ensure every active repo has a matching project entry and current notes.",
+    "done": false,
+    "type": "task",
+    "subtasks": [
+      { "id": "sub-023-001", "title": "Compare AGENTS repo list vs projects.json", "done": false },
+      { "id": "sub-023-002", "title": "Add missing project links", "done": false }
+    ],
+    "recurrence": null,
+    "sort_order": 0,
+    "amount": ""
+  },
+  {
+    "id": "example-024",
+    "title": "Review CDN integrity plan",
+    "date": "2026-02-28",
+    "priority": "P2",
+    "notes": "Prepare SRI hashes and fallback strategy for Alpine.js and SortableJS.",
+    "done": false,
+    "type": "task",
+    "subtasks": [
+      { "id": "sub-024-001", "title": "Add integrity attrs in index.html", "done": false },
+      { "id": "sub-024-002", "title": "Decide fallback if CDN fails", "done": false },
+      { "id": "sub-024-003", "title": "Document in README", "done": false }
+    ],
+    "recurrence": null,
+    "sort_order": 0,
+    "amount": ""
+  },
+  {
+    "id": "example-025",
+    "title": "Sort out month-end project summaries",
+    "date": "2026-02-28",
+    "priority": "P1",
+    "notes": "Add per-project summary entries for the last calendar month.",
+    "done": false,
+    "type": "task",
+    "subtasks": [
+      { "id": "sub-025-001", "title": "Compile qtrade status update", "done": false },
+      { "id": "sub-025-002", "title": "Compile bun-do status update", "done": false },
+      { "id": "sub-025-003", "title": "Compile nanobook status update", "done": false }
+    ],
+    "recurrence": { "type": "monthly", "day": 28 },
+    "sort_order": 0,
+    "amount": ""
+  },
+  {
+    "id": "example-026",
+    "title": "Electricity bill",
+    "date": "2026-03-05",
+    "priority": "P1",
+    "notes": "Monthly home utility bill for office setup.",
+    "done": false,
+    "type": "payment",
+    "subtasks": [],
+    "recurrence": { "type": "monthly", "day": 5 },
+    "sort_order": 0,
+    "amount": "92.40"
+  },
+  {
+    "id": "example-027",
+    "title": "Cloud backup storage",
+    "date": "2026-03-12",
+    "priority": "P1",
+    "notes": "Monthly backup service renewal.",
+    "done": false,
+    "type": "payment",
+    "subtasks": [],
+    "recurrence": { "type": "monthly", "day": 12 },
+    "sort_order": 0,
+    "amount": "35.00"
+  },
+  {
+    "id": "example-028",
+    "title": "Vehicle maintenance reminder",
+    "date": "2026-03-16",
+    "priority": "P2",
+    "notes": "Book annual inspection reminders and align with calendar.",
+    "done": false,
+    "type": "reminder",
+    "subtasks": [
+      { "id": "sub-028-001", "title": "Schedule workshop visit", "done": false },
+      { "id": "sub-028-002", "title": "Upload invoice to notes", "done": false }
+    ],
+    "recurrence": { "type": "yearly", "month": 3, "day": 16 },
+    "sort_order": 0,
+    "amount": ""
+  },
+  {
+    "id": "example-029",
+    "title": "Cross-repo API compatibility check",
+    "date": "2026-03-08",
+    "priority": "P0",
+    "notes": "Validate external service compatibility for bun-do + qtrade + nanobook scripts.",
+    "done": false,
+    "type": "task",
+    "subtasks": [
+      { "id": "sub-029-001", "title": "Run import smoke tests", "done": false },
+      { "id": "sub-029-002", "title": "Check script args and defaults", "done": false },
+      { "id": "sub-029-003", "title": "Record issues in project entries", "done": false }
+    ],
+    "recurrence": null,
+    "sort_order": 0,
+    "amount": ""
+  },
+  {
+    "id": "example-030",
+    "title": "Update AGENTS guidance references",
+    "date": "2026-03-01",
+    "priority": "P1",
+    "notes": "Keep working rules current with latest repo conventions and security expectations.",
+    "done": false,
+    "type": "task",
+    "subtasks": [
+      { "id": "sub-030-001", "title": "Review updated instruction blocks", "done": false },
+      { "id": "sub-030-002", "title": "Add links to new workflows", "done": false }
+    ],
+    "recurrence": null,
+    "sort_order": 0,
+    "amount": ""
+  },
+  {
+    "id": "example-031",
+    "title": "Reconcile recurring payments",
+    "date": "2026-03-07",
+    "priority": "P2",
+    "notes": "Validate all monthly/annual payment tasks were executed and still on budget.",
+    "done": false,
+    "type": "payment",
+    "subtasks": [
+      { "id": "sub-031-001", "title": "Check telecom and rent entries", "done": false },
+      { "id": "sub-031-002", "title": "Validate ChatGPT subscription", "done": false },
+      { "id": "sub-031-003", "title": "Confirm tax payment date", "done": false }
+    ],
+    "recurrence": { "type": "monthly", "day": 7 },
+    "sort_order": 0,
+    "amount": ""
   }
 ]
