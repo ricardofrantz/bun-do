@@ -1,12 +1,11 @@
 from __future__ import annotations
 
-from collections import defaultdict
-from datetime import date
+from collections import Counter, defaultdict
 from calendar import month_abbr
-from collections import Counter
+from datetime import date
 from pathlib import Path
 import json
-import uuid
+from uuid import uuid4
 
 import streamlit as st
 
@@ -30,15 +29,15 @@ def load_tasks() -> list[dict]:
         return []
 
     with DATA_PATH.open("r", encoding="utf-8") as f:
-        tasks = json.load(f)
+        items = json.load(f)
 
-    normalized: list[dict] = []
-    for item in tasks:
+    normalized = []
+    for item in items:
         if not isinstance(item, dict):
             continue
         normalized.append(
             {
-                "id": item.get("id") or str(uuid.uuid4()),
+                "id": item.get("id") or str(uuid4()),
                 "title": str(item.get("title", "")).strip() or "Untitled task",
                 "date": iso_to_date(item.get("date", date.today().isoformat())).isoformat(),
                 "priority": item.get("priority", "P2") if item.get("priority", "P2") in PRIORITY_LABELS else "P2",
@@ -54,13 +53,19 @@ def save_tasks(tasks: list[dict]) -> None:
         json.dump(tasks, f, indent=2, ensure_ascii=False)
 
 
-def advance_unfinished_tasks(tasks: list[dict], today: date) -> int:
+def sorted_tasks(tasks: list[dict]) -> list[dict]:
+    return sorted(
+        tasks,
+        key=lambda t: (iso_to_date(t["date"]), PRIORITY_ORDER.get(t.get("priority", "P2"), 99), t["title"].lower()),
+    )
+
+
+def rollover_unfinished(tasks: list[dict], today: date) -> int:
     moved = 0
     for task in tasks:
         if task["done"]:
             continue
-        due = iso_to_date(task["date"])
-        if due < today:
+        if iso_to_date(task["date"]) < today:
             task["date"] = today.isoformat()
             moved += 1
     if moved:
@@ -68,22 +73,11 @@ def advance_unfinished_tasks(tasks: list[dict], today: date) -> int:
     return moved
 
 
-def sort_tasks(tasks: list[dict]) -> list[dict]:
-    return sorted(
-        tasks,
-        key=lambda task: (
-            iso_to_date(task["date"]),
-            PRIORITY_ORDER.get(task.get("priority", "P2"), 99),
-            task.get("title", "").lower(),
-        ),
-    )
-
-
-def task_month_key(task: dict) -> str:
+def month_key(task: dict) -> str:
     return iso_to_date(task["date"]).strftime("%Y-%m")
 
 
-def task_day_key(task: dict) -> str:
+def day_key(task: dict) -> str:
     return iso_to_date(task["date"]).strftime("%Y-%m-%d")
 
 
@@ -100,218 +94,162 @@ def delete_task(task_id: str) -> None:
     save_tasks(st.session_state.tasks)
 
 
-def render_task_row(task: dict, show_notes: bool) -> None:
-    cols = st.columns([0.55, 1, 0.9, 0.9, 4, 1])
-    done_key = f"done_{task['id']}"
-    cols[0].checkbox(
-        label="Done",
+def render_task(task: dict) -> None:
+    cols = st.columns([0.52, 1.35, 0.6, 0.42], vertical_alignment="center")
+    d = iso_to_date(task["date"])
+    checked = cols[0].checkbox(
+        label="",
         value=task["done"],
-        key=done_key,
+        key=f"done_{task['id']}",
         on_change=toggle_done,
         args=(task["id"],),
         label_visibility="collapsed",
     )
-    cols[1].caption(iso_to_date(task["date"]).strftime("%Y-%m-%d"))
-    cols[2].caption(task["priority"])
-    cols[3].caption(f"{'✅' if task['done'] else '◯'}")
-    cols[4].markdown(f"**{task['title']}**")
-    cols[5].button("Delete", key=f"delete_{task['id']}", on_click=delete_task, args=(task["id"],))
-
-    if show_notes:
-        st.write(task["notes"] or "—")
+    cols[1].markdown(f"**{d.isoformat()}**  ·  **{task['title']}**")
+    cols[2].write(task["priority"])
+    cols[3].button("🗑", key=f"delete_{task['id']}", on_click=delete_task, args=(task["id"],))
+    if task["notes"]:
+        st.caption(task["notes"])
 
 
-def render_month_summary(year: int, tasks: list[dict], include_done: bool, detail_mode: str) -> None:
-    year_tasks = [t for t in tasks if iso_to_date(t["date"]).year == year]
+def render_year_view(selected_year: int, tasks: list[dict], include_done: bool) -> None:
+    year_tasks = [t for t in tasks if iso_to_date(t["date"]).year == selected_year]
     if not include_done:
         year_tasks = [t for t in year_tasks if not t["done"]]
-    year_tasks = sort_tasks(year_tasks)
+    year_tasks = sorted_tasks(year_tasks)
 
     if not year_tasks:
-        st.info("No tasks in the selected year with current filters.")
+        st.info("No tasks for this year.")
         return
-
-    total_counts = Counter(t["priority"] for t in year_tasks)
-    done_count = sum(1 for t in year_tasks if t["done"])
-
-    st.metric("Tasks in year", len(year_tasks))
-    st.metric("Done", done_count)
-    st.write(
-        f"Priority mix: P0={total_counts['P0']} | P1={total_counts['P1']} | "
-        f"P2={total_counts['P2']} | P3={total_counts['P3']}"
-    )
-    st.divider()
 
     grouped = defaultdict(list)
     for task in year_tasks:
-        grouped[task_month_key(task)].append(task)
+        grouped[month_key(task)].append(task)
 
-    for month in [f"{year}-{m:02d}" for m in range(1, 13)]:
-        month_tasks = grouped.get(month, [])
-        month_name = month_abbr[int(month[-2:])]
-        completed = sum(1 for t in month_tasks if t["done"])
-        with st.expander(f"{month_name} {month} — {len(month_tasks)} tasks ({completed} done)", expanded=False):
+    for m in [f"{selected_year}-{mm:02d}" for mm in range(1, 13)]:
+        month_tasks = grouped.get(m, [])
+        done_count = sum(1 for t in month_tasks if t["done"])
+        with st.expander(f"{month_abbr[int(m[-2:])]} {m} · {len(month_tasks)} tasks ({done_count} done)", expanded=False):
             if not month_tasks:
-                st.caption("No tasks.")
+                st.caption("No tasks")
                 continue
+
+            day_groups = defaultdict(list)
             for task in month_tasks:
-                render_task_row(task, show_notes=(detail_mode == "Detailed"))
-            if st.button("Open this month in detail", key=f"open_{month}"):
-                st.session_state.current_view = "Month agenda"
-                st.session_state.current_month = int(month[-2:])
-                st.rerun()
+                day_groups[day_key(task)].append(task)
+
+            for day in sorted(day_groups):
+                tasks_day = day_groups[day]
+                done_day = sum(1 for t in tasks_day if t["done"])
+                with st.expander(f"{day} · {len(tasks_day)} ({done_day} done)", expanded=False):
+                    for task in tasks_day:
+                        render_task(task)
 
 
-def render_month_view(year: int, month: int, tasks: list[dict], include_done: bool, detail_mode: str) -> None:
-    month_tasks = [
-        t for t in tasks if iso_to_date(t["date"]).year == year and iso_to_date(t["date"]).month == month
-    ]
+def render_month_view(selected_year: int, selected_month: int, tasks: list[dict], include_done: bool) -> None:
+    month_tasks = [t for t in tasks if iso_to_date(t["date"]).year == selected_year and iso_to_date(t["date"]).month == selected_month]
     if not include_done:
         month_tasks = [t for t in month_tasks if not t["done"]]
-    month_tasks = sort_tasks(month_tasks)
+    month_tasks = sorted_tasks(month_tasks)
 
-    st.subheader(f"{month_abbr[month]} {year}")
     if not month_tasks:
-        st.info("No tasks for this month with current filters.")
+        st.info("No tasks for this month.")
         return
 
-    grouped = defaultdict(list)
+    day_groups = defaultdict(list)
     for task in month_tasks:
-        grouped[task_day_key(task)].append(task)
+        day_groups[day_key(task)].append(task)
 
-    for day_key in sorted(grouped.keys()):
-        day_tasks = grouped[day_key]
-        done_day = sum(1 for t in day_tasks if t["done"])
-        with st.expander(f"{day_key} — {len(day_tasks)} tasks ({done_day} done)", expanded=False):
-            for task in day_tasks:
-                render_task_row(task, show_notes=(detail_mode == "Detailed"))
+    for day in sorted(day_groups):
+        with st.expander(day, expanded=True):
+            for task in day_groups[day]:
+                render_task(task)
 
 
-def render_day_view(year: int, selected_day: date, tasks: list[dict], include_done: bool, detail_mode: str) -> None:
+def render_day_view(selected_day: date, tasks: list[dict], include_done: bool) -> None:
     day_tasks = [t for t in tasks if iso_to_date(t["date"]) == selected_day]
     if not include_done:
         day_tasks = [t for t in day_tasks if not t["done"]]
-    day_tasks = sort_tasks(day_tasks)
+    day_tasks = sorted_tasks(day_tasks)
 
-    st.subheader(f"{selected_day.isoformat()} task detail")
     if not day_tasks:
-        st.info("No tasks for the selected day with current filters.")
+        st.info("No tasks for this day.")
         return
 
     for task in day_tasks:
-        with st.expander(f"{task['priority']} | {task['title']}", expanded=True):
-            render_task_row(task, show_notes=(detail_mode == "Detailed"))
+        render_task(task)
 
 
-def sync_to_current_date(today: date) -> None:
-    last_sync = st.session_state.get("agenda_last_sync")
-    if last_sync == today.isoformat():
-        return
-
-    st.session_state.agenda_last_sync = today.isoformat()
-    st.session_state.current_year = today.year
-    st.session_state.current_month = today.month
-    st.session_state.current_day = today
-
-
-# ---- App state ----
-st.set_page_config(page_title="Year Todo Agenda", page_icon="🗓", layout="wide")
-st.title("Year Todo Agenda")
+# App setup
+st.set_page_config(page_title="Todo Calendar", layout="wide")
+st.title("Todo Calendar")
 
 if "tasks" not in st.session_state:
     st.session_state.tasks = load_tasks()
 
 today = date.today()
-rolled_count = advance_unfinished_tasks(st.session_state.tasks, today)
-if rolled_count:
-    st.caption(f"Carried forward {rolled_count} unfinished task(s) to today ({today}).")
-sync_to_current_date(today)
+rollover_count = rollover_unfinished(st.session_state.tasks, today)
+if rollover_count:
+    st.caption(f"Carried forward {rollover_count} unfinished task(s) to {today}")
 
+# Sidebar controls
 st.sidebar.header("Controls")
-default_year = today.year
-years = sorted({iso_to_date(task["date"]).year for task in st.session_state.tasks} | {default_year})
-st.session_state.setdefault("current_year", default_year)
-selected_year = st.sidebar.selectbox(
-    "Year",
-    years,
-    index=years.index(st.session_state.current_year) if st.session_state.current_year in years else years.index(default_year),
-    key="year_selector",
-)
-st.session_state.current_year = selected_year
-
-st.session_state.setdefault("current_view", "Year overview")
-st.session_state.setdefault("current_month", today.month)
-st.session_state.setdefault("current_day", today)
-view = st.sidebar.radio(
-    "Agenda depth",
-    ["Year overview", "Month agenda", "Day agenda"],
-    index=["Year overview", "Month agenda", "Day agenda"].index(st.session_state.current_view)
-)
-st.session_state.current_view = view
-
-detail_mode = st.sidebar.radio("Task detail", ["Compact", "Detailed"], index=0)
-include_done = st.sidebar.toggle("Show completed", value=False)
+years = sorted({iso_to_date(t["date"]).year for t in st.session_state.tasks} | {today.year})
+selected_year = st.sidebar.selectbox("Year", years, index=years.index(today.year) if today.year in years else 0)
+st.session_state.setdefault("view", "Year")
+view = st.sidebar.radio("Depth", ["Year", "Month", "Day"], index=["Year", "Month", "Day"].index(st.session_state.view))
+st.session_state.view = view
+show_done = st.sidebar.toggle("Show done", value=False)
 
 st.sidebar.markdown("---")
-st.subheader("Add task")
-with st.sidebar.form("new_task", clear_on_submit=True):
-    title = st.text_input("Task", placeholder="Draft monthly architecture review")
-    due = st.date_input("Due date", value=today)
+st.sidebar.subheader("Add")
+with st.sidebar.form("add_task"):
+    title = st.text_input("Title")
+    due = st.date_input("Date", value=today)
     priority = st.selectbox("Priority", options=PRIORITY_LABELS, index=2)
-    notes = st.text_area("Notes", placeholder="Optional context", height=72)
-    submitted = st.form_submit_button("Add task")
+    notes = st.text_area("Notes", value="", height=72)
+    submit = st.form_submit_button("Add")
 
-if submitted:
-    if title.strip():
-        st.session_state.tasks.append(
-            {
-                "id": str(uuid.uuid4()),
-                "title": title.strip(),
-                "date": due.isoformat(),
-                "priority": priority,
-                "notes": notes.strip(),
-                "done": False,
-            }
-        )
-        save_tasks(st.session_state.tasks)
-        st.rerun()
+if submit and title.strip():
+    st.session_state.tasks.append(
+        {
+            "id": str(uuid4()),
+            "title": title.strip(),
+            "date": due.isoformat(),
+            "priority": priority,
+            "notes": notes.strip(),
+            "done": False,
+        }
+    )
+    save_tasks(st.session_state.tasks)
+    st.rerun()
 
-st.divider()
-
-all_tasks = sort_tasks(st.session_state.tasks)
-
+# Content
+all_tasks = sorted_tasks(st.session_state.tasks)
 if not all_tasks:
-    st.info("No tasks yet. Add your first task to start building your yearly agenda.")
+    st.info("No entries yet.")
 else:
-    if view == "Year overview":
-        render_month_summary(selected_year, all_tasks, include_done, detail_mode)
-    elif view == "Month agenda":
+    if view == "Year":
+        render_year_view(selected_year, all_tasks, show_done)
+    elif view == "Month":
         selected_month = st.sidebar.selectbox(
             "Month",
-            list(range(1, 13)),
-            index=st.session_state.current_month - 1,
+            range(1, 13),
+            index=today.month - 1,
             format_func=lambda m: month_abbr[m],
-            key="month_selector",
         )
-        st.session_state.current_month = selected_month
-        render_month_view(selected_year, selected_month, all_tasks, include_done, detail_mode)
+        render_month_view(selected_year, selected_month, all_tasks, show_done)
     else:
-        default_day = st.session_state.current_day
-        if isinstance(default_day, str):
-            default_day = iso_to_date(default_day)
         selected_day = st.sidebar.date_input(
             "Day",
-            value=default_day,
+            value=date(selected_year, today.month, min(today.day, 28)),
             min_value=date(selected_year, 1, 1),
             max_value=date(selected_year, 12, 31),
-            key="day_selector",
         )
-        st.session_state.current_day = selected_day
         if selected_day.year != selected_year:
             selected_day = selected_day.replace(year=selected_year)
-        render_day_view(selected_day.year, selected_day, all_tasks, include_done, detail_mode)
+        render_day_view(selected_day, all_tasks, show_done)
 
-total_tasks = len(all_tasks)
-done_tasks = sum(1 for t in all_tasks if t["done"])
-remaining = total_tasks - done_tasks
-st.caption(f"Total: {total_tasks} | Done: {done_tasks} | Remaining: {remaining}")
+total = len(all_tasks)
+done = sum(1 for t in all_tasks if t["done"])
+st.caption(f"Total: {total} | Done: {done} | Remaining: {total - done}")
