@@ -7,12 +7,37 @@ REPO_DIR="$(cd "$(dirname "$(readlink -f "$0")")/.." && pwd)"
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 WRAPPER_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 PORT="${TODO_PORT:-8000}"
+DEFAULT_TODO_DATA_DIR="${HOME}/autobkp/bun-do"
 LOGDIR="$REPO_DIR/logfile"
 mkdir -p "$LOGDIR"
 PIDFILE="$LOGDIR/todo.pid"
 LOGFILE="$LOGDIR/todo.log"
+DEFAULT_DATA_DIR_SELECTED=false
+
+COMMAND="${1:-start}"
+EXAMPLE_MODE=false
+
+for arg in "$@"; do
+  case "$arg" in
+    --example)
+      EXAMPLE_MODE=true
+      ;;
+    start|stop|restart|status)
+      COMMAND="$arg"
+      ;;
+      -h|--help)
+      echo "Usage: bun-do [start|stop|restart|status] [--example]"
+      echo "  --example  Load data/tasks.example.json when (re)starting"
+      exit 0
+      ;;
+  esac
+done
+
 if [[ -n "${TODO_DATA_DIR:-}" ]]; then
   DATA_DIR="${TODO_DATA_DIR/#\~/$HOME}"
+elif [[ "$EXAMPLE_MODE" == "false" && -f "$DEFAULT_TODO_DATA_DIR/tasks.json" ]]; then
+  DATA_DIR="$DEFAULT_TODO_DATA_DIR"
+  DEFAULT_DATA_DIR_SELECTED=true
 else
   DATA_DIR="$REPO_DIR/data"
   for candidate in "$WRAPPER_DIR/bun-do" "$WRAPPER_DIR/todo-data" "$SCRIPT_DIR/bun-do" "$SCRIPT_DIR/todo-data" "$SCRIPT_DIR" "$REPO_DIR"; do
@@ -26,27 +51,13 @@ else
     fi
   done
 fi
+
+if [[ "$DEFAULT_DATA_DIR_SELECTED" == "true" ]]; then
+  echo "[bun-do] defaulted TODO_DATA_DIR to $DATA_DIR (set in shell with: export TODO_DATA_DIR=$DATA_DIR)"
+fi
+
 TASKS_PATH="$DATA_DIR/tasks.json"
 EXAMPLE_TASKS_PATH="$REPO_DIR/data/tasks.example.json"
-
-COMMAND="${1:-start}"
-EXAMPLE_MODE=false
-
-for arg in "$@"; do
-  case "$arg" in
-    --example)
-      EXAMPLE_MODE=true
-      ;;
-    start|stop|restart|status)
-      COMMAND="$arg"
-      ;;
-    -h|--help)
-      echo "Usage: bun-do [start|stop|restart|status] [--example]"
-      echo "  --example  Load data/tasks.example.json when (re)starting"
-      exit 0
-      ;;
-  esac
-done
 
 _pid() {
   [[ -f "$PIDFILE" ]] && cat "$PIDFILE" || echo ""
