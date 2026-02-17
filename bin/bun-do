@@ -5,6 +5,7 @@ set -euo pipefail
 
 REPO_DIR="$(cd "$(dirname "$(readlink -f "$0")")/.." && pwd)"
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+WRAPPER_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 PORT="${TODO_PORT:-8000}"
 LOGDIR="$REPO_DIR/logfile"
 mkdir -p "$LOGDIR"
@@ -14,8 +15,7 @@ if [[ -n "${TODO_DATA_DIR:-}" ]]; then
   DATA_DIR="${TODO_DATA_DIR/#\~/$HOME}"
 else
   DATA_DIR="$REPO_DIR/data"
-  SCRIPT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
-  for candidate in "$SCRIPT_ROOT/bun-do" "$SCRIPT_ROOT/todo-data" "$SCRIPT_ROOT" "$REPO_DIR"; do
+  for candidate in "$WRAPPER_DIR/bun-do" "$WRAPPER_DIR/todo-data" "$SCRIPT_DIR/bun-do" "$SCRIPT_DIR/todo-data" "$SCRIPT_DIR" "$REPO_DIR"; do
     if [[ -f "$candidate/tasks.json" ]]; then
       DATA_DIR="$candidate"
       break
