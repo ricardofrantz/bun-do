@@ -1051,7 +1051,6 @@ html.light input[type="date"]::-webkit-calendar-picker-indicator {
   <!-- Toast -->
   <div class="toast" :class="{ visible: toastVisible, error: toastType === 'error' }">
     <span x-text="toastMessage"></span>
-    <button x-show="_deletedTask" class="toast-undo" @click="undoDelete()">Undo</button>
   </div>
 
   <!-- Navbar -->
@@ -1780,9 +1779,17 @@ function todoApp() {
     editingTaskId: null,
     editingNotesId: null,
     editingSubtaskId: null,
-    _deletedTask: null,
-    _deleteTimer: null,
     expandedSubtasks: {},
+    _syncChannel: null,
+    _syncClientId: Math.random().toString(36).slice(2),
+    _syncEventTs: 0,
+    _syncStorageHandler: null,
+    _syncVisibilityHandler: null,
+    _syncFocusHandler: null,
+    _syncPollId: null,
+    _syncPollIntervalMs: 10000,
+    _syncFetching: false,
+    _syncStorageKey: 'bun-do-task-sync',
     recentlyDone: {},
     toastMessage: '',
     toastVisible: false,
@@ -1797,6 +1804,9 @@ function todoApp() {
       if (!this.darkMode) document.documentElement.classList.add('light');
       if (this.fontSize !== 100) document.documentElement.style.fontSize = this.fontSize + '%';
       await Promise.all([this.fetchTasks(), this.fetchProjects()]);
+      this._initSync();
+      this._startSyncPoller();
+      window.addEventListener('beforeunload', () => this._stopSync());
     },
 
     toggleTheme() {
@@ -1840,6 +1850,7 @@ function todoApp() {
       if (res.ok) {
         task.recurrence = recurrence;
         this.toast(recurrence ? this.recurrenceLabel(task) : 'Recurrence removed');
+        this._sync('recurrence');
       }
     },
 
@@ -1856,14 +1867,122 @@ function todoApp() {
     },
 
     // ── Task API ────────────────────────────
-    async fetchTasks() {
+    async fetchTasks({ showToast = true } = {}) {
       const res = await this.apiFetch('/api/tasks');
       if (!res.ok) return;
       const data = await res.json();
       this.tasks = data.tasks;
-      if (data.carried_over > 0) {
+      if (showToast && data.carried_over > 0) {
         this.toast(data.carried_over + ' overdue task(s) moved to today');
       }
+    },
+
+    async _syncFromServer({ showToast = false } = {}) {
+      if (this._syncFetching) return;
+      this._syncFetching = true;
+      try {
+        await Promise.all([this.fetchTasks({ showToast }), this.fetchProjects()]);
+      } finally {
+        this._syncFetching = false;
+      }
+    },
+
+    _initSync() {
+      const emit = (message) => {
+        if (!message || typeof message !== 'object') return;
+        const payload = {
+          sender: this._syncClientId,
+          ts: Date.now(),
+          message,
+        };
+        const serialized = JSON.stringify(payload);
+        try {
+          localStorage.setItem(this._syncStorageKey, serialized);
+        } catch {}
+        if (!this._syncChannel) return;
+        try {
+          this._syncChannel.postMessage(serialized);
+        } catch {}
+      };
+      this._syncEmit = emit;
+
+      if (typeof BroadcastChannel !== 'undefined') {
+        try {
+          this._syncChannel = new BroadcastChannel('bun-do-task-sync');
+          this._syncChannel.onmessage = (event) => {
+            this._onRemoteSync(event.data);
+          };
+        } catch {}
+      }
+
+      this._syncStorageHandler = (event) => {
+        if (event.key !== this._syncStorageKey) return;
+        this._onRemoteSync(event.newValue);
+      };
+      window.addEventListener('storage', this._syncStorageHandler);
+
+      this._syncVisibilityHandler = () => {
+        if (!document.hidden) this._syncFromServer({ showToast: false });
+      };
+      document.addEventListener('visibilitychange', this._syncVisibilityHandler);
+
+      this._syncFocusHandler = () => this._syncFromServer({ showToast: false });
+      window.addEventListener('focus', this._syncFocusHandler);
+    },
+
+    _sync(message) {
+      if (!this._syncEmit) return;
+      this._syncEmit(message);
+      this._syncFromServer({ showToast: false });
+    },
+
+    _startSyncPoller() {
+      if (this._syncPollId) return;
+      this._syncPollId = setInterval(() => {
+        if (document.hidden) return;
+        this._syncFromServer({ showToast: false });
+      }, this._syncPollIntervalMs);
+    },
+
+    _onRemoteSync(eventData) {
+      let parsed = eventData;
+      if (typeof eventData === 'string') {
+        try {
+          parsed = JSON.parse(eventData);
+        } catch {
+          return;
+        }
+      }
+      if (!parsed || parsed.sender === this._syncClientId) return;
+      const ts = parsed.ts;
+      if (typeof ts !== 'number') return;
+      if (ts <= this._syncEventTs) return;
+      this._syncEventTs = ts;
+      this._syncFromServer({ showToast: false });
+    },
+
+    _stopSync() {
+      if (this._syncStorageHandler) {
+        window.removeEventListener('storage', this._syncStorageHandler);
+        this._syncStorageHandler = null;
+      }
+      if (this._syncVisibilityHandler) {
+        document.removeEventListener('visibilitychange', this._syncVisibilityHandler);
+        this._syncVisibilityHandler = null;
+      }
+      if (this._syncFocusHandler) {
+        window.removeEventListener('focus', this._syncFocusHandler);
+        this._syncFocusHandler = null;
+      }
+      if (this._syncPollId) {
+        clearInterval(this._syncPollId);
+        this._syncPollId = null;
+      }
+      if (this._syncChannel) {
+        this._syncChannel.close();
+        this._syncChannel = null;
+      }
+      this._syncEmit = null;
     },
 
     async addTask() {
@@ -1887,6 +2006,7 @@ function todoApp() {
         this.showModal = false;
         this.form = { title: '', date: todayStr, priority: 'P2', notes: '', type: 'task', recurrenceType: 'none', recurrence: null, amount: '' };
         this.toast('Task added');
+        this._sync('addTask');
       }
     },
 
@@ -1910,32 +2030,21 @@ function todoApp() {
         } else {
           delete this.recentlyDone[task.id];
         }
+        this._sync('toggleDone');
       }
     },
 
     async deleteTask(id) {
       const task = this.tasks.find(t => t.id === id);
       if (!task) return;
-      // Soft delete: remove from UI, defer server call
       this.tasks = this.tasks.filter(t => t.id !== id);
-      this._deletedTask = { ...task, subtasks: (task.subtasks || []).map(s => ({ ...s })) };
-      if (this._deleteTimer) clearTimeout(this._deleteTimer);
-      this.toast('Task deleted', 'success', 10000);
-      this._deleteTimer = setTimeout(async () => {
-        if (!this._deletedTask || this._deletedTask.id !== id) return;
-        await this.apiFetch('/api/tasks/' + id, { method: 'DELETE' });
-        this._deletedTask = null;
-      }, 10000);
-    },
-
-    undoDelete() {
-      if (!this._deletedTask) return;
-      const task = this._deletedTask;
-      this._deletedTask = null;
-      if (this._deleteTimer) { clearTimeout(this._deleteTimer); this._deleteTimer = null; }
-      // Task still exists on server — just restore to local array
-      this.tasks.push(task);
-      this.toast('Task restored');
+      this.toast('Task deleted');
+      const res = await this.apiFetch('/api/tasks/' + id, { method: 'DELETE' });
+      if (res.ok) {
+        this._sync('deleteTask');
+      } else {
+        await this.fetchTasks({ showToast: false });
+      }
     },
 
     async clearDone() {
@@ -1945,11 +2054,12 @@ function todoApp() {
         this.tasks = this.tasks.filter(t => !t.done);
         if (data.cleared > 0) this.toast('Cleared ' + data.cleared + ' completed task(s)');
         else this.toast('No completed tasks to clear');
+        this._sync('clearDone');
       }
     },
 
     async reloadFromDisk() {
-      await Promise.all([this.fetchTasks(), this.fetchProjects()]);
+      await Promise.all([this.fetchTasks({ showToast: true }), this.fetchProjects()]);
       this.toast('Reloaded from disk');
     },
 
@@ -1970,6 +2080,7 @@ function todoApp() {
       });
       if (res.ok) {
         task.title = newTitle;
+        this._sync('saveTitle');
       }
     },
 
@@ -1988,6 +2099,7 @@ function todoApp() {
       });
       if (res.ok) {
         task.notes = newNotes;
+        this._sync('saveNotes');
       }
     },
 
@@ -2086,6 +2198,7 @@ function todoApp() {
         this.showProjectModal = false;
         this.projectForm = { name: '', repo: '', description: '' };
         this.toast('Project created');
+        this._sync('addProject');
       }
     },
 
@@ -2094,6 +2207,7 @@ function todoApp() {
       if (res.ok) {
         this.projects = this.projects.filter(p => p.id !== id);
         this.toast('Project deleted');
+        this._sync('deleteProject');
       }
     },
 
@@ -2107,6 +2221,7 @@ function todoApp() {
       });
       if (res.ok) {
         proj.status = next;
+        this._sync('cycleProjectStatus');
       }
     },
 
@@ -2126,6 +2241,7 @@ function todoApp() {
         const proj = this.projects.find(p => p.id === projId);
         if (proj) proj.entries.push(entry);
         input.value = '';
+        this._sync('addEntry');
       }
     },
 
@@ -2136,6 +2252,7 @@ function todoApp() {
         if (proj) {
           proj.entries = proj.entries.filter(e => e.id !== entryId);
         }
+        this._sync('deleteEntry');
       }
     },
 
