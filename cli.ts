@@ -21,6 +21,13 @@ const LOG_FILE = join(DATA_DIR, "bun-do.log");
 
 const args = process.argv.slice(2);
 
+// --version / -v: print version from package.json and exit
+if (args.includes("--version") || args.includes("-v")) {
+  const pkg = JSON.parse(readFileSync(join(import.meta.dir, "package.json"), "utf-8"));
+  console.log(pkg.version);
+  process.exit(0);
+}
+
 // --serve: internal flag — run server in foreground (used by background spawner)
 if (args.includes("--serve")) {
   await import("./server.ts");
@@ -97,11 +104,12 @@ async function start(): Promise<boolean> {
 
   writeFileSync(PID_FILE, String(child.pid));
 
+  const pkg = JSON.parse(readFileSync(join(import.meta.dir, "package.json"), "utf-8"));
   const ready = await waitForReady();
   if (!ready) {
-    console.log(`[bun-do] started (pid ${child.pid}) but not yet responding`);
+    console.log(`[bun-do] v${pkg.version} started (pid ${child.pid}) but not yet responding`);
   } else {
-    console.log(`[bun-do] started (pid ${child.pid})`);
+    console.log(`[bun-do] v${pkg.version} started (pid ${child.pid})`);
   }
   console.log(`[bun-do] ${url}`);
   console.log(`[bun-do] log: ${LOG_FILE}`);
