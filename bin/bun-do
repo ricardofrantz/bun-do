@@ -114,7 +114,7 @@ _start() {
   fi
 
   cd "$REPO_DIR"
-  nohup bun run server.ts --port="$PORT" >> "$LOGFILE" 2>&1 &
+  TODO_DATA_DIR="$DATA_DIR" nohup bun run server.ts --port="$PORT" >> "$LOGFILE" 2>&1 &
   echo $! > "$PIDFILE"
 
   # Wait for server ready
