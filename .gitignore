@@ -6,3 +6,15 @@ __pycache__/
 # Data files (personal), but keep the example
 data/*.json
 !data/tasks.example.json
+
+# Session artifacts
+plan_*.md
+LEDGER.md
+.claude/
+.agent/
+.agents/
+.augment/
+.crush/
+.goose/
+.pi/
+.vibe/

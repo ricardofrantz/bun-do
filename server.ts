@@ -85,6 +85,10 @@ function validateIds(raw: unknown): string[] | null {
   return raw;
 }
 
+function validCurrency(raw: unknown): string {
+  return CURRENCIES.includes(raw as string) ? (raw as string) : "CHF";
+}
+
 function safeUrl(raw: unknown): string {
   const url = String(raw ?? "").trim();
   if (!url) return "";
@@ -221,9 +225,7 @@ function loadTasks(): Task[] {
         recurrence: (item.recurrence as Recurrence) || null,
         sort_order: (item.sort_order as number) ?? 0,
         amount: String(item.amount ?? "").trim(),
-        currency: CURRENCIES.includes(item.currency as string)
-          ? (item.currency as string)
-          : "CHF",
+        currency: validCurrency(item.currency),
       }));
   } catch {
     return [];
@@ -340,7 +342,7 @@ async function handleCreateTask(req: Request): Promise<Response> {
     recurrence,
     sort_order: 0,
     amount: String(body.amount ?? "").trim(),
-    currency: CURRENCIES.includes(body.currency) ? body.currency : "CHF",
+    currency: validCurrency(body.currency),
   };
   tasks.push(newTask);
   saveTasks(tasks);

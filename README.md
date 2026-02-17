@@ -74,14 +74,14 @@ bun run start   # plain server on :8000
 | `TODO_PORT` | `8000` | Server port |
 | `BUNDO_DATA_DIR` | `./data` | Directory for JSON data files |
 
-For this environment, keep a fixed default in `~/.bashrc`:
+To use a custom data directory, set it in your shell profile:
 
 ```bash
-export BUNDO_DATA_DIR=\${HOME}/.bun-do
+export BUNDO_DATA_DIR=~/my-tasks
 ```
 
 ```bash
-TODO_PORT=9000 BUNDO_DATA_DIR=~/my-tasks bun run start
+BUNDO_PORT=9000 BUNDO_DATA_DIR=~/my-tasks bun run start
 ```
 
 ## Data

@@ -1362,7 +1362,7 @@ html.light input[type="date"]::-webkit-calendar-picker-indicator {
                             :style="cell.topPriority ? 'background:' + priorityColor(cell.topPriority) : ''"></span>
                       <span class="cal-recurrence-icon" x-show="cell.hasRecurring">&#x21bb;</span>
                     </div>
-                    <span class="cal-count" x-text="cell.remaining + ' left'"></span>
+                    <span class="cal-count" x-text="cell.count + ' left'"></span>
                   </div>
                 </div>
               </template>
@@ -1768,9 +1768,11 @@ function todoApp() {
   const DAYS_MON_FIRST = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
   // Views that show flat lists rather than time-based periods
   const LIST_VIEWS = ['projects', 'all', 'backlog', 'payments'];
-  const CURRENCIES = ['CHF', 'USD', 'EUR', 'BRL'];
   const CURRENCY_SYMBOLS = { CHF: 'CHF ', USD: '$', EUR: '€', BRL: 'R$' };
   function currencySymbol(code) { return CURRENCY_SYMBOLS[code] || code + ' '; }
+  function defaultForm() {
+    return { title: '', date: todayStr, priority: 'P2', notes: '', type: 'task', recurrenceType: 'none', recurrence: null, amount: '', currency: 'CHF' };
+  }
 
   function taskSort(a, b) {
     const pa = PRIORITY_ORDER[a.priority] ?? 99;
@@ -1816,7 +1818,7 @@ function todoApp() {
     toastType: 'success',
     _toastTimer: null,
     searchQuery: '',
-    form: { title: '', date: todayStr, priority: 'P2', notes: '', type: 'task', recurrenceType: 'none', recurrence: null, amount: '', currency: 'CHF' },
+    form: defaultForm(),
     projectForm: { name: '', repo: '', description: '' },
 
     // ── Init ───────────────────────────────
@@ -1987,14 +1989,11 @@ function todoApp() {
     _restoreTaskSelection() {
       const rows = this._taskRows();
       const ids = rows.map((row) => row.dataset.taskId);
-      if (!ids.length) {
-        this.selectedTaskId = null;
-        this._taskRows().forEach((row) => row.classList.remove('is-selected'));
-      } else if (!this.selectedTaskId || !ids.includes(this.selectedTaskId)) {
-        this.selectedTaskId = null;
-        this._taskRows().forEach((row) => row.classList.remove('is-selected'));
-      } else {
+      if (this.selectedTaskId && ids.includes(this.selectedTaskId)) {
         this._setSelectedTaskId(this.selectedTaskId);
+      } else {
+        this.selectedTaskId = null;
+        rows.forEach((row) => row.classList.remove('is-selected'));
       }
     },
 
@@ -2078,7 +2077,7 @@ function todoApp() {
       if (res.ok) {
         await this.fetchTasks();
         this.showModal = false;
-        this.form = { title: '', date: todayStr, priority: 'P2', notes: '', type: 'task', recurrenceType: 'none', recurrence: null, amount: '', currency: 'CHF' };
+        this.form = defaultForm();
         this.toast('Task added');
         this._sync('addTask');
       }
@@ -2135,10 +2134,6 @@ function todoApp() {
     async saveNow() {
       await this._syncFromServer({ showToast: false });
       this.toast('Sync');
-    },
-
-    async reloadFromDisk() {
-      return this.saveNow();
     },
 
     // ── Inline Edit ─────────────────────────
@@ -2562,7 +2557,6 @@ function todoApp() {
           dateStr: dateStr,
           isToday: dateStr === todayStr,
           count: active.length,
-          remaining: active.length,
           topPriority: topPriority,
           hasDeadline,
           hasReminder,
@@ -2647,7 +2641,7 @@ function todoApp() {
 
     // ── Modal ──────────────────────────────
     openAddModal() {
-      this.form = { title: '', date: todayStr, priority: 'P2', notes: '', type: 'task', recurrenceType: 'none', recurrence: null, amount: '', currency: 'CHF' };
+      this.form = defaultForm();
       if (this.view === 'day') {
         this.form.date = this.day;
       } else if (this.view === 'month') {
