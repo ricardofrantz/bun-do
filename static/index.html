@@ -2063,6 +2063,11 @@ function todoApp() {
       this.toast('Reloaded from disk');
     },
 
+    async saveNow() {
+      await this._syncFromServer({ showToast: false });
+      this.toast('Synced from disk');
+    },
+
     // ── Inline Edit ─────────────────────────
     startEditTitle(task) {
       if (task.done) return;
@@ -2689,6 +2694,12 @@ function todoApp() {
     handleKeydown(event) {
       const tag = document.activeElement?.tagName;
       const inInput = tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT';
+
+      if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 's') {
+        event.preventDefault();
+        this.saveNow();
+        return;
+      }
 
       // Escape always works
       if (event.key === 'Escape') {
