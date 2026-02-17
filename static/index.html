@@ -1070,7 +1070,7 @@ html.light input[type="date"]::-webkit-calendar-picker-indicator {
       <template x-if="!isListView()">
         <button class="btn-ghost" @click="goToday()">Today</button>
       </template>
-      <button class="btn-ghost" @click="reloadFromDisk()" title="Reload from disk">&#x27f3;</button>
+      <button class="btn-ghost" @click="saveNow()" title="Sync now (Ctrl/Cmd + S) – auto-sync every 10s">&#x27f3;</button>
       <template x-if="view !== 'projects'">
         <button class="btn-ghost" :class="{ active: showDone }" @click="showDone = !showDone"
                 x-text="showDone ? 'Hide done' : 'Show done'"></button>
@@ -2065,7 +2065,11 @@ function todoApp() {
 
     async saveNow() {
       await this._syncFromServer({ showToast: false });
-      this.toast('Synced from disk');
+      this.toast('Synced');
+    },
+
+    async reloadFromDisk() {
+      return this.saveNow();
     },
 
     // ── Inline Edit ─────────────────────────
