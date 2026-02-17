@@ -5,7 +5,8 @@ A fast, local-first todo app built on [Bun](https://bun.sh). One TypeScript file
 ![Bun](https://img.shields.io/badge/runtime-Bun-f9f1e1?logo=bun)
 ![TypeScript](https://img.shields.io/badge/lang-TypeScript-3178c6?logo=typescript&logoColor=white)
 ![Alpine.js](https://img.shields.io/badge/frontend-Alpine.js-77c1d2?logo=alpine.js&logoColor=white)
-![License](https://img.shields.io/badge/license-MIT-blue)
+![License](https://img.shields.io/badge/license-BSD--3--Clause-blue)
+![npm](https://img.shields.io/npm/v/bun-do)
 
 ## Why bun-do?
 
@@ -57,6 +58,35 @@ Or without hot reload:
 bun run start   # plain server on :8000
 ```
 
+### Install from npm (alternative)
+
+```bash
+bunx bun-do              # run directly
+bun install -g bun-do    # or install globally, then: bun-do
+```
+
+Data is stored in `~/.bun-do` when installed via npm.
+
+
+## macOS app option (optional)
+
+If you want bun-do as a desktop-style app on macOS:
+
+```bash
+./bin/bun-do.app start   # start backend + open app window
+./bin/bun-do.app stop    # stop backend
+./bin/bun-do.app status  # check running state
+./bin/bun-do.app restart # restart backend
+```
+
+The app script keeps using the same backend and storage (`BUNDO_DATA_DIR`), so browser and macOS modes share data.
+
+You can customize port with:
+
+```bash
+TODO_PORT=9010 ./bin/bun-do.app start
+```
+
 ### Background service
 
 ```bash
@@ -71,8 +101,8 @@ bun run start   # plain server on :8000
 
 | Variable | Default | Description |
 |---|---|---|
-| `TODO_PORT` | `8000` | Server port |
-| `BUNDO_DATA_DIR` | `./data` | Directory for JSON data files |
+| `TODO_PORT` | `8000` | Server port (used by `bin/` scripts) |
+| `BUNDO_DATA_DIR` | `./data` (source) / `~/.bun-do` (npm) | Directory for JSON data files |
 
 To use a custom data directory, set it in your shell profile:
 
@@ -81,7 +111,7 @@ export BUNDO_DATA_DIR=~/my-tasks
 ```
 
 ```bash
-BUNDO_PORT=9000 BUNDO_DATA_DIR=~/my-tasks bun run start
+TODO_PORT=9000 BUNDO_DATA_DIR=~/my-tasks bun run start
 ```
 
 ## Data
@@ -129,4 +159,4 @@ On first run, `tasks.example.json` seeds `tasks.json` if it doesn't exist.
 
 ## License
 
-MIT
+BSD-3-Clause

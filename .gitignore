@@ -2,6 +2,7 @@ node_modules/
 logfile/
 .venv/
 __pycache__/
+.bun-do-macapp/
 
 # Data files (personal), but keep the example
 data/*.json
