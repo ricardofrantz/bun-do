@@ -4,12 +4,29 @@
 set -euo pipefail
 
 REPO_DIR="$(cd "$(dirname "$(readlink -f "$0")")/.." && pwd)"
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 PORT="${TODO_PORT:-8000}"
 LOGDIR="$REPO_DIR/logfile"
 mkdir -p "$LOGDIR"
 PIDFILE="$LOGDIR/todo.pid"
 LOGFILE="$LOGDIR/todo.log"
-TASKS_PATH="$REPO_DIR/data/tasks.json"
+if [[ -n "${TODO_DATA_DIR:-}" ]]; then
+  DATA_DIR="${TODO_DATA_DIR/#\~/$HOME}"
+else
+  DATA_DIR="$REPO_DIR/data"
+  SCRIPT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+  for candidate in "$SCRIPT_ROOT/bun-do" "$SCRIPT_ROOT/todo-data" "$SCRIPT_ROOT" "$REPO_DIR"; do
+    if [[ -f "$candidate/tasks.json" ]]; then
+      DATA_DIR="$candidate"
+      break
+    fi
+    if [[ -f "$candidate/data/tasks.json" ]]; then
+      DATA_DIR="$candidate/data"
+      break
+    fi
+  done
+fi
+TASKS_PATH="$DATA_DIR/tasks.json"
 EXAMPLE_TASKS_PATH="$REPO_DIR/data/tasks.example.json"
 
 COMMAND="${1:-start}"
@@ -65,15 +82,20 @@ _stop() {
 }
 
 _start() {
+  local tasks_source="$TASKS_PATH"
+
   if [[ "$EXAMPLE_MODE" == "true" ]]; then
     if [[ -f "$EXAMPLE_TASKS_PATH" ]]; then
       cp "$EXAMPLE_TASKS_PATH" "$TASKS_PATH"
+      tasks_source="$EXAMPLE_TASKS_PATH"
       echo "[bun-do] loaded example tasks from $EXAMPLE_TASKS_PATH"
     else
       echo "[bun-do] example file not found at $EXAMPLE_TASKS_PATH" >&2
       return 1
     fi
   fi
+
+  echo "[bun-do] loading tasks from $tasks_source"
 
   if _running; then
     echo "[bun-do] already running (pid $(_pid)) on http://localhost:$PORT"
