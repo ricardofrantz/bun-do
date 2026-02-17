@@ -1,7 +1,7 @@
 // server.ts — Todo app backend (Bun, zero dependencies)
 
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "fs";
-import { extname, join } from "path";
+import { extname, join, resolve } from "path";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -32,6 +32,7 @@ interface Task {
   recurrence: Recurrence | null;
   sort_order: number;
   amount: string;
+  currency: string;
 }
 
 interface Entry {
@@ -54,7 +55,7 @@ interface Project {
 // ---------------------------------------------------------------------------
 
 const PKG_DIR = import.meta.dir;
-const DATA_DIR = process.env.TODO_DATA_DIR || join(process.cwd(), "data");
+const DATA_DIR = process.env.BUNDO_DATA_DIR || join(process.cwd(), "data");
 const TASKS_PATH = join(DATA_DIR, "tasks.json");
 const PROJECTS_PATH = join(DATA_DIR, "projects.json");
 const STATIC_DIR = join(PKG_DIR, "static");
@@ -62,6 +63,7 @@ const STATIC_DIR = join(PKG_DIR, "static");
 const PRIORITY_LABELS = ["P0", "P1", "P2", "P3"];
 const PRIORITY_ORDER: Record<string, number> = { P0: 0, P1: 1, P2: 2, P3: 3 };
 const TASK_TYPES = ["task", "deadline", "reminder", "payment"];
+const CURRENCIES = ["CHF", "USD", "EUR", "BRL"];
 const RECURRENCE_TYPES = ["weekly", "monthly", "yearly"];
 const PROJECT_STATUSES = ["active", "paused", "completed", "archived"];
 
@@ -81,6 +83,24 @@ function validateIds(raw: unknown): string[] | null {
   if (!Array.isArray(raw)) return null;
   if (!raw.every((id) => typeof id === "string")) return null;
   return raw;
+}
+
+function safeUrl(raw: unknown): string {
+  const url = String(raw ?? "").trim();
+  if (!url) return "";
+  return /^https?:\/\//i.test(url) ? url : "";
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+async function parseJson(req: Request): Promise<any> {
+  try {
+    return await req.json();
+  } catch {
+    throw new Response(JSON.stringify({ detail: "Invalid JSON" }), {
+      status: 400,
+      headers: { "Content-Type": "application/json" },
+    });
+  }
 }
 
 const MIME: Record<string, string> = {
@@ -201,6 +221,9 @@ function loadTasks(): Task[] {
         recurrence: (item.recurrence as Recurrence) || null,
         sort_order: (item.sort_order as number) ?? 0,
         amount: String(item.amount ?? "").trim(),
+        currency: CURRENCIES.includes(item.currency as string)
+          ? (item.currency as string)
+          : "CHF",
       }));
   } catch {
     return [];
@@ -244,6 +267,7 @@ function createNextRecurring(task: Task): Task {
     recurrence: task.recurrence,
     sort_order: 0,
     amount: task.amount,
+    currency: task.currency,
   };
 }
 
@@ -300,7 +324,7 @@ function handleGetTasks(): Response {
 }
 
 async function handleCreateTask(req: Request): Promise<Response> {
-  const body = await req.json();
+  const body = await parseJson(req);
   const tasks = loadTasks();
   const taskType = TASK_TYPES.includes(body.type) ? body.type : "task";
   const recurrence = sanitizeRecurrence(body.recurrence);
@@ -316,6 +340,7 @@ async function handleCreateTask(req: Request): Promise<Response> {
     recurrence,
     sort_order: 0,
     amount: String(body.amount ?? "").trim(),
+    currency: CURRENCIES.includes(body.currency) ? body.currency : "CHF",
   };
   tasks.push(newTask);
   saveTasks(tasks);
@@ -323,7 +348,7 @@ async function handleCreateTask(req: Request): Promise<Response> {
 }
 
 async function handleReorderTasks(req: Request): Promise<Response> {
-  const body = await req.json();
+  const body = await parseJson(req);
   const ids = validateIds(body.ids);
   if (!ids) return json({ detail: "ids must be a string array" }, 400);
   const tasks = loadTasks();
@@ -347,7 +372,7 @@ function handleClearDone(): Response {
 }
 
 async function handleUpdateTask(taskId: string, req: Request): Promise<Response> {
-  const body = await req.json();
+  const body = await parseJson(req);
   const tasks = loadTasks();
   for (const task of tasks) {
     if (task.id === taskId) {
@@ -368,6 +393,9 @@ async function handleUpdateTask(taskId: string, req: Request): Promise<Response>
       }
       if (body.amount !== undefined) {
         task.amount = String(body.amount).trim();
+      }
+      if (body.currency !== undefined && CURRENCIES.includes(body.currency)) {
+        task.currency = body.currency;
       }
       if (body.recurrence !== undefined) {
         task.recurrence = sanitizeRecurrence(body.recurrence);
@@ -398,7 +426,7 @@ function handleDeleteTask(taskId: string): Response {
 // -- Subtasks --
 
 async function handleAddSubtask(taskId: string, req: Request): Promise<Response> {
-  const body = await req.json();
+  const body = await parseJson(req);
   const tasks = loadTasks();
   for (const task of tasks) {
     if (task.id === taskId) {
@@ -420,7 +448,7 @@ async function handleUpdateSubtask(
   subId: string,
   req: Request,
 ): Promise<Response> {
-  const body = await req.json();
+  const body = await parseJson(req);
   const tasks = loadTasks();
   for (const task of tasks) {
     if (task.id === taskId) {
@@ -455,7 +483,7 @@ function handleDeleteSubtask(taskId: string, subId: string): Response {
 }
 
 async function handleReorderSubtasks(taskId: string, req: Request): Promise<Response> {
-  const body = await req.json();
+  const body = await parseJson(req);
   const ids = validateIds(body.ids);
   if (!ids) return json({ detail: "ids must be a string array" }, 400);
   const tasks = loadTasks();
@@ -482,12 +510,12 @@ function handleGetProjects(): Response {
 }
 
 async function handleCreateProject(req: Request): Promise<Response> {
-  const body = await req.json();
+  const body = await parseJson(req);
   const projects = loadProjects();
   const project: Project = {
     id: crypto.randomUUID(),
     name: String(body.name ?? "").trim() || "Untitled project",
-    repo: String(body.repo ?? "").trim(),
+    repo: safeUrl(body.repo),
     status: "active",
     description: String(body.description ?? "").trim(),
     entries: [],
@@ -498,7 +526,7 @@ async function handleCreateProject(req: Request): Promise<Response> {
 }
 
 async function handleUpdateProject(projectId: string, req: Request): Promise<Response> {
-  const body = await req.json();
+  const body = await parseJson(req);
   const projects = loadProjects();
   for (const proj of projects) {
     if (proj.id === projectId) {
@@ -506,7 +534,7 @@ async function handleUpdateProject(projectId: string, req: Request): Promise<Res
         proj.name = String(body.name).trim() || proj.name;
       }
       if (body.repo !== undefined) {
-        proj.repo = String(body.repo).trim();
+        proj.repo = safeUrl(body.repo);
       }
       if (body.status !== undefined && PROJECT_STATUSES.includes(body.status)) {
         proj.status = body.status;
@@ -530,7 +558,7 @@ function handleDeleteProject(projectId: string): Response {
 }
 
 async function handleAddEntry(projectId: string, req: Request): Promise<Response> {
-  const body = await req.json();
+  const body = await parseJson(req);
   const projects = loadProjects();
   for (const proj of projects) {
     if (proj.id === projectId) {
@@ -583,9 +611,9 @@ async function handleRequest(req: Request): Promise<Response> {
 
   if (path.startsWith("/static/")) {
     const filepath = path.slice("/static/".length);
-    // Prevent directory traversal
-    if (filepath.includes("..")) return new Response("Forbidden", { status: 403 });
-    const file = Bun.file(join(STATIC_DIR, filepath));
+    const resolved = resolve(STATIC_DIR, filepath);
+    if (!resolved.startsWith(STATIC_DIR + "/")) return new Response("Forbidden", { status: 403 });
+    const file = Bun.file(resolved);
     if (await file.exists()) {
       const ext = extname(filepath);
       return new Response(file, {
@@ -593,6 +621,14 @@ async function handleRequest(req: Request): Promise<Response> {
       });
     }
     return new Response("Not found", { status: 404 });
+  }
+
+  // -- CSRF check for mutating API requests --
+  if (path.startsWith("/api/") && method !== "GET") {
+    const origin = req.headers.get("origin");
+    if (origin && !/^https?:\/\/localhost(:\d+)?$/.test(origin)) {
+      return new Response("Forbidden", { status: 403 });
+    }
   }
 
   // -- API routes --
@@ -688,7 +724,14 @@ const port = portArg ? parseInt(portArg.split("=")[1]) : 8000;
 
 const server = Bun.serve({
   port,
-  fetch: handleRequest,
+  async fetch(req: Request): Promise<Response> {
+    try {
+      return await handleRequest(req);
+    } catch (e) {
+      if (e instanceof Response) return e;
+      return json({ detail: "Internal server error" }, 500);
+    }
+  },
 });
 
 console.log(`[bun-do] listening on http://localhost:${server.port}`);

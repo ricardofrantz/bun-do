@@ -7,7 +7,7 @@ REPO_DIR="$(cd "$(dirname "$(readlink -f "$0")")/.." && pwd)"
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 WRAPPER_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 PORT="${TODO_PORT:-8000}"
-DEFAULT_TODO_DATA_DIR="${HOME}/autobkp/bun-do"
+DEFAULT_BUNDO_DATA_DIR="${HOME}/autobkp/bun-do"
 LOGDIR="$REPO_DIR/logfile"
 mkdir -p "$LOGDIR"
 PIDFILE="$LOGDIR/todo.pid"
@@ -33,10 +33,10 @@ for arg in "$@"; do
   esac
 done
 
-if [[ -n "${TODO_DATA_DIR:-}" ]]; then
-  DATA_DIR="${TODO_DATA_DIR/#\~/$HOME}"
-elif [[ "$EXAMPLE_MODE" == "false" && -f "$DEFAULT_TODO_DATA_DIR/tasks.json" ]]; then
-  DATA_DIR="$DEFAULT_TODO_DATA_DIR"
+if [[ -n "${BUNDO_DATA_DIR:-}" ]]; then
+  DATA_DIR="${BUNDO_DATA_DIR/#\~/$HOME}"
+elif [[ "$EXAMPLE_MODE" == "false" && -f "$DEFAULT_BUNDO_DATA_DIR/tasks.json" ]]; then
+  DATA_DIR="$DEFAULT_BUNDO_DATA_DIR"
   DEFAULT_DATA_DIR_SELECTED=true
 else
   DATA_DIR="$REPO_DIR/data"
@@ -53,7 +53,7 @@ else
 fi
 
 if [[ "$DEFAULT_DATA_DIR_SELECTED" == "true" ]]; then
-  echo "[bun-do] defaulted TODO_DATA_DIR to $DATA_DIR (set in shell with: export TODO_DATA_DIR=$DATA_DIR)"
+  echo "[bun-do] defaulted BUNDO_DATA_DIR to $DATA_DIR (set in shell with: export BUNDO_DATA_DIR=$DATA_DIR)"
 fi
 
 TASKS_PATH="$DATA_DIR/tasks.json"
@@ -125,7 +125,7 @@ _start() {
   fi
 
   cd "$REPO_DIR"
-  TODO_DATA_DIR="$DATA_DIR" nohup bun run server.ts --port="$PORT" >> "$LOGFILE" 2>&1 &
+  BUNDO_DATA_DIR="$DATA_DIR" nohup bun run server.ts --port="$PORT" >> "$LOGFILE" 2>&1 &
   echo $! > "$PIDFILE"
 
   # Wait for server ready

@@ -72,21 +72,21 @@ bun run start   # plain server on :8000
 | Variable | Default | Description |
 |---|---|---|
 | `TODO_PORT` | `8000` | Server port |
-| `TODO_DATA_DIR` | `./data` | Directory for JSON data files |
+| `BUNDO_DATA_DIR` | `./data` | Directory for JSON data files |
 
 For this environment, keep a fixed default in `~/.bashrc`:
 
 ```bash
-export TODO_DATA_DIR=\${HOME}/.bun-do
+export BUNDO_DATA_DIR=\${HOME}/.bun-do
 ```
 
 ```bash
-TODO_PORT=9000 TODO_DATA_DIR=~/my-tasks bun run start
+TODO_PORT=9000 BUNDO_DATA_DIR=~/my-tasks bun run start
 ```
 
 ## Data
 
-All data is plain JSON in `TODO_DATA_DIR`:
+All data is plain JSON in `BUNDO_DATA_DIR`:
 
 ```
 data/

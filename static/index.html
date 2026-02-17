@@ -201,6 +201,10 @@ body {
 }
 .task-row:hover { background: var(--bg-hover); }
 .task-row.done { opacity: 0.55; }
+.task-row.is-selected {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
 
 /* Type indicator dot */
 .type-dot {
@@ -1108,7 +1112,7 @@ html.light input[type="date"]::-webkit-calendar-picker-indicator {
             <div class="day-label" x-text="formatDayHeaderLong(group.date)"></div>
             <template x-for="task in group.tasks" :key="task.id">
               <div>
-                <div class="task-row" :class="{ done: task.done }">
+                <div class="task-row" :class="{ done: task.done }" :data-task-id="task.id">
                   <span class="type-dot" :class="task.type || 'task'"></span>
                   <div class="checkbox-wrap" @click="toggleDone(task)">
                     <div class="checkbox" :class="{ checked: task.done }">
@@ -1169,7 +1173,7 @@ html.light input[type="date"]::-webkit-calendar-picker-indicator {
         <div x-ref="backlogViewList" x-effect="initBacklogViewSortable()">
           <template x-for="task in backlogTasks()" :key="task.id">
             <div :data-id="task.id">
-              <div class="task-row" :class="{ done: task.done }">
+              <div class="task-row" :class="{ done: task.done }" :data-task-id="task.id">
                 <span class="drag-handle"><svg viewBox="0 0 10 16" width="10" height="16"><circle cx="3" cy="3" r="1.2" fill="currentColor"/><circle cx="7" cy="3" r="1.2" fill="currentColor"/><circle cx="3" cy="8" r="1.2" fill="currentColor"/><circle cx="7" cy="8" r="1.2" fill="currentColor"/><circle cx="3" cy="13" r="1.2" fill="currentColor"/><circle cx="7" cy="13" r="1.2" fill="currentColor"/></svg></span>
                 <span class="type-dot task"></span>
                 <div class="checkbox-wrap" @click="toggleDone(task)">
@@ -1229,11 +1233,11 @@ html.light input[type="date"]::-webkit-calendar-picker-indicator {
           <div class="payment-month-group">
             <div class="payment-month-header">
               <span class="payment-month-label" x-text="group.label"></span>
-              <span class="payment-month-total" x-show="group.total > 0" x-text="'$' + group.total.toFixed(2)"></span>
+              <span class="payment-month-total" x-show="formatTotals(group.totals)" x-text="formatTotals(group.totals)"></span>
             </div>
             <template x-for="task in group.tasks" :key="task.id">
               <div>
-                <div class="task-row" :class="{ done: task.done }">
+                <div class="task-row" :class="{ done: task.done }" :data-task-id="task.id">
                   <span class="type-dot payment"></span>
                   <div class="checkbox-wrap" @click="toggleDone(task)">
                     <div class="checkbox" :class="{ checked: task.done }">
@@ -1250,7 +1254,7 @@ html.light input[type="date"]::-webkit-calendar-picker-indicator {
                       <span class="recurrence-icon" :class="task.recurrence ? task.recurrence.type : ''" :title="task.recurrence ? recurrenceLabel(task) : 'Click to make recurring'" @click="cycleRecurrence(task)" style="cursor:pointer">&#x21bb;</span>
                     </div>
                   </div>
-                  <span class="payment-amount" x-show="task.amount" x-text="'$' + task.amount"></span>
+                  <span class="payment-amount" x-show="task.amount" x-text="currencySymbol(task.currency || 'CHF') + task.amount"></span>
                   <button class="btn-delete" @click="deleteTask(task.id)" title="Delete">
                     <svg viewBox="0 0 16 16" width="14" height="14"><path d="M4 4l8 8M12 4l-8 8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
                   </button>
@@ -1278,7 +1282,7 @@ html.light input[type="date"]::-webkit-calendar-picker-indicator {
                   <div class="day-label" x-text="formatDayHeader(group.date)"></div>
                   <template x-for="task in group.tasks" :key="task.id">
                     <div>
-                      <div class="task-row" :class="{ done: task.done }">
+                      <div class="task-row" :class="{ done: task.done }" :data-task-id="task.id">
                         <span class="type-dot" :class="task.type || 'task'"></span>
                         <div class="checkbox-wrap" @click="toggleDone(task)">
                           <div class="checkbox" :class="{ checked: task.done }">
@@ -1376,7 +1380,7 @@ html.light input[type="date"]::-webkit-calendar-picker-indicator {
             <div class="day-label" x-show="!selectedCalDay" x-text="formatDayHeaderLong(group.date)"></div>
             <template x-for="task in group.tasks" :key="task.id">
               <div>
-                <div class="task-row" :class="{ done: task.done }">
+                <div class="task-row" :class="{ done: task.done }" :data-task-id="task.id">
                   <span class="type-dot" :class="task.type || 'task'"></span>
                   <div class="checkbox-wrap" @click="toggleDone(task)">
                     <div class="checkbox" :class="{ checked: task.done }">
@@ -1437,7 +1441,7 @@ html.light input[type="date"]::-webkit-calendar-picker-indicator {
         </div>
         <template x-for="task in tasksForDate(day)" :key="task.id">
           <div>
-            <div class="task-row" :class="{ done: task.done }">
+            <div class="task-row" :class="{ done: task.done }" :data-task-id="task.id">
               <span class="type-dot" :class="task.type || 'task'"></span>
               <div class="checkbox-wrap" @click="toggleDone(task)">
                 <div class="checkbox" :class="{ checked: task.done }">
@@ -1539,7 +1543,7 @@ html.light input[type="date"]::-webkit-calendar-picker-indicator {
       <div x-show="showBacklog" x-ref="backlogList" x-effect="initBacklogSortable()">
         <template x-for="task in backlogTasks()" :key="task.id">
           <div :data-id="task.id">
-            <div class="task-row" :class="{ done: task.done }">
+            <div class="task-row" :class="{ done: task.done }" :data-task-id="task.id">
               <span class="drag-handle"><svg viewBox="0 0 10 16" width="10" height="16"><circle cx="3" cy="3" r="1.2" fill="currentColor"/><circle cx="7" cy="3" r="1.2" fill="currentColor"/><circle cx="3" cy="8" r="1.2" fill="currentColor"/><circle cx="7" cy="8" r="1.2" fill="currentColor"/><circle cx="3" cy="13" r="1.2" fill="currentColor"/><circle cx="7" cy="13" r="1.2" fill="currentColor"/></svg></span>
               <span class="type-dot task"></span>
               <div class="checkbox-wrap" @click="toggleDone(task)">
@@ -1599,11 +1603,11 @@ html.light input[type="date"]::-webkit-calendar-picker-indicator {
           <div class="payment-month-group">
             <div class="payment-month-header">
               <span class="payment-month-label" x-text="group.label"></span>
-              <span class="payment-month-total" x-show="group.total > 0" x-text="'$' + group.total.toFixed(2)"></span>
+              <span class="payment-month-total" x-show="formatTotals(group.totals)" x-text="formatTotals(group.totals)"></span>
             </div>
             <template x-for="task in group.tasks" :key="task.id">
               <div>
-                <div class="task-row" :class="{ done: task.done }">
+                <div class="task-row" :class="{ done: task.done }" :data-task-id="task.id">
                   <span class="type-dot payment"></span>
                   <div class="checkbox-wrap" @click="toggleDone(task)">
                     <div class="checkbox" :class="{ checked: task.done }">
@@ -1618,7 +1622,7 @@ html.light input[type="date"]::-webkit-calendar-picker-indicator {
                       <span class="recurrence-icon" :class="task.recurrence ? task.recurrence.type : ''" :title="task.recurrence ? recurrenceLabel(task) : 'Click to make recurring'" @click="cycleRecurrence(task)" style="cursor:pointer">&#x21bb;</span>
                     </div>
                   </div>
-                  <span class="payment-amount" x-show="task.amount" x-text="'$' + task.amount"></span>
+                  <span class="payment-amount" x-show="task.amount" x-text="currencySymbol(task.currency || 'CHF') + task.amount"></span>
                   <button class="btn-delete" @click="deleteTask(task.id)" title="Delete">
                     <svg viewBox="0 0 16 16" width="14" height="14"><path d="M4 4l8 8M12 4l-8 8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
                   </button>
@@ -1676,6 +1680,18 @@ html.light input[type="date"]::-webkit-calendar-picker-indicator {
         <div class="form-group" x-show="form.type === 'payment'">
           <label class="form-label">Amount</label>
           <input class="form-input" type="text" x-model="form.amount" placeholder="e.g. 150.00">
+        </div>
+        <div class="form-group" x-show="form.type === 'payment'">
+          <label class="form-label">Currency</label>
+          <div class="type-selector">
+            <template x-for="c in ['CHF','USD','EUR','BRL']" :key="c">
+              <span class="type-chip type-payment"
+                    :class="{ selected: form.currency === c }"
+                    @click="form.currency = c"
+                    x-text="c"
+                    style="cursor:pointer"></span>
+            </template>
+          </div>
         </div>
         <div class="form-group">
           <label class="form-label">Recurrence</label>
@@ -1752,6 +1768,9 @@ function todoApp() {
   const DAYS_MON_FIRST = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
   // Views that show flat lists rather than time-based periods
   const LIST_VIEWS = ['projects', 'all', 'backlog', 'payments'];
+  const CURRENCIES = ['CHF', 'USD', 'EUR', 'BRL'];
+  const CURRENCY_SYMBOLS = { CHF: 'CHF ', USD: '$', EUR: '€', BRL: 'R$' };
+  function currencySymbol(code) { return CURRENCY_SYMBOLS[code] || code + ' '; }
 
   function taskSort(a, b) {
     const pa = PRIORITY_ORDER[a.priority] ?? 99;
@@ -1779,6 +1798,7 @@ function todoApp() {
     editingTaskId: null,
     editingNotesId: null,
     editingSubtaskId: null,
+    selectedTaskId: null,
     expandedSubtasks: {},
     _syncChannel: null,
     _syncClientId: Math.random().toString(36).slice(2),
@@ -1796,7 +1816,7 @@ function todoApp() {
     toastType: 'success',
     _toastTimer: null,
     searchQuery: '',
-    form: { title: '', date: todayStr, priority: 'P2', notes: '', type: 'task', recurrenceType: 'none', recurrence: null, amount: '' },
+    form: { title: '', date: todayStr, priority: 'P2', notes: '', type: 'task', recurrenceType: 'none', recurrence: null, amount: '', currency: 'CHF' },
     projectForm: { name: '', repo: '', description: '' },
 
     // ── Init ───────────────────────────────
@@ -1806,6 +1826,7 @@ function todoApp() {
       await Promise.all([this.fetchTasks(), this.fetchProjects()]);
       this._initSync();
       this._startSyncPoller();
+      this._restoreTaskSelection();
       window.addEventListener('beforeunload', () => this._stopSync());
     },
 
@@ -1872,6 +1893,7 @@ function todoApp() {
       if (!res.ok) return;
       const data = await res.json();
       this.tasks = data.tasks;
+      this.$nextTick(() => this._restoreTaskSelection());
       if (showToast && data.carried_over > 0) {
         this.toast(data.carried_over + ' overdue task(s) moved to today');
       }
@@ -1944,6 +1966,57 @@ function todoApp() {
       }, this._syncPollIntervalMs);
     },
 
+    _taskRows() {
+      return this.$el ? [...this.$el.querySelectorAll('.task-row[data-task-id]')] : [];
+    },
+
+    _setSelectedTaskId(taskId) {
+      this.selectedTaskId = taskId;
+      const rows = this._taskRows();
+      let selectedRow = null;
+      for (const row of rows) {
+        const isSelected = row.dataset.taskId === taskId;
+        row.classList.toggle('is-selected', isSelected);
+        if (isSelected) selectedRow = row;
+      }
+      if (selectedRow) {
+        selectedRow.scrollIntoView({ block: 'nearest' });
+      }
+    },
+
+    _restoreTaskSelection() {
+      const rows = this._taskRows();
+      const ids = rows.map((row) => row.dataset.taskId);
+      if (!ids.length) {
+        this.selectedTaskId = null;
+        this._taskRows().forEach((row) => row.classList.remove('is-selected'));
+      } else if (!this.selectedTaskId || !ids.includes(this.selectedTaskId)) {
+        this.selectedTaskId = null;
+        this._taskRows().forEach((row) => row.classList.remove('is-selected'));
+      } else {
+        this._setSelectedTaskId(this.selectedTaskId);
+      }
+    },
+
+    _moveSelection(delta) {
+      const rows = this._taskRows();
+      if (!rows.length) return;
+      const ids = rows.map((row) => row.dataset.taskId);
+      const current = ids.indexOf(this.selectedTaskId ?? '');
+      const fallback = delta > 0 ? 0 : rows.length - 1;
+      const startIndex = current === -1 ? fallback : current;
+      const nextIndex = (startIndex + delta + rows.length) % rows.length;
+      const target = rows[nextIndex];
+      if (target) this._setSelectedTaskId(target.dataset.taskId);
+    },
+
+    toggleTaskSelection(task) {
+      if (!task) return;
+      const taskId = task.id;
+      if (this.selectedTaskId === taskId) this._setSelectedTaskId(null);
+      else this._setSelectedTaskId(taskId);
+    },
+
     _onRemoteSync(eventData) {
       let parsed = eventData;
       if (typeof eventData === 'string') {
@@ -1995,6 +2068,7 @@ function todoApp() {
         type: this.form.type,
         recurrence: this.form.recurrence,
         amount: this.form.amount,
+        currency: this.form.currency,
       };
       const res = await this.apiFetch('/api/tasks', {
         method: 'POST',
@@ -2004,7 +2078,7 @@ function todoApp() {
       if (res.ok) {
         await this.fetchTasks();
         this.showModal = false;
-        this.form = { title: '', date: todayStr, priority: 'P2', notes: '', type: 'task', recurrenceType: 'none', recurrence: null, amount: '' };
+        this.form = { title: '', date: todayStr, priority: 'P2', notes: '', type: 'task', recurrenceType: 'none', recurrence: null, amount: '', currency: 'CHF' };
         this.toast('Task added');
         this._sync('addTask');
       }
@@ -2056,11 +2130,6 @@ function todoApp() {
         else this.toast('No completed tasks to clear');
         this._sync('clearDone');
       }
-    },
-
-    async reloadFromDisk() {
-      await Promise.all([this.fetchTasks({ showToast: true }), this.fetchProjects()]);
-      this.toast('Reloaded from disk');
     },
 
     async saveNow() {
@@ -2412,14 +2481,24 @@ function todoApp() {
         const d = parseDate(t.date);
         const key = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0');
         if (!current || current.key !== key) {
-          current = { key, label: MONTHS_SHORT[d.getMonth()] + ' ' + d.getFullYear(), tasks: [], total: 0 };
+          current = { key, label: MONTHS_SHORT[d.getMonth()] + ' ' + d.getFullYear(), tasks: [], totals: {} };
           groups.push(current);
         }
         current.tasks.push(t);
         const amt = parseFloat(t.amount);
-        if (!isNaN(amt)) current.total += amt;
+        if (!isNaN(amt)) {
+          const cur = t.currency || 'CHF';
+          current.totals[cur] = (current.totals[cur] || 0) + amt;
+        }
       }
       return groups;
+    },
+
+    formatTotals(totals) {
+      return Object.entries(totals)
+        .filter(([, v]) => v > 0)
+        .map(([c, v]) => currencySymbol(c) + v.toFixed(2))
+        .join(' · ');
     },
 
     allTasks() {
@@ -2469,20 +2548,20 @@ function todoApp() {
 
       for (let d = 1; d <= daysInMonth; d++) {
         const dateStr = year + '-' + String(month+1).padStart(2,'0') + '-' + String(d).padStart(2,'0');
-        const dayTasks = this.tasks.filter(t => t.date === dateStr && this.isRegularTask(t));
+        const dayTasks = this.tasks.filter(t => t.date === dateStr && this.isRegularTask(t) && this.isVisible(t));
         const active = dayTasks.filter(t => !t.done);
         let topPriority = null;
         if (dayTasks.length > 0) {
-          topPriority = [...dayTasks].sort((a,b) => (PRIORITY_ORDER[a.priority]??99) - (PRIORITY_ORDER[b.priority]??99))[0].priority;
+          topPriority = [...active].sort((a,b) => (PRIORITY_ORDER[a.priority]??99) - (PRIORITY_ORDER[b.priority]??99))[0]?.priority || null;
         }
-        const hasDeadline = dayTasks.some(t => t.type === 'deadline');
-        const hasReminder = dayTasks.some(t => t.type === 'reminder');
-        const hasRecurring = dayTasks.some(t => t.recurrence);
+        const hasDeadline = active.some(t => t.type === 'deadline');
+        const hasReminder = active.some(t => t.type === 'reminder');
+        const hasRecurring = active.some(t => t.recurrence);
         week.push({
           day: d,
           dateStr: dateStr,
           isToday: dateStr === todayStr,
-          count: dayTasks.length,
+          count: active.length,
           remaining: active.length,
           topPriority: topPriority,
           hasDeadline,
@@ -2568,7 +2647,7 @@ function todoApp() {
 
     // ── Modal ──────────────────────────────
     openAddModal() {
-      this.form = { title: '', date: todayStr, priority: 'P2', notes: '', type: 'task', recurrenceType: 'none', recurrence: null, amount: '' };
+      this.form = { title: '', date: todayStr, priority: 'P2', notes: '', type: 'task', recurrenceType: 'none', recurrence: null, amount: '', currency: 'CHF' };
       if (this.view === 'day') {
         this.form.date = this.day;
       } else if (this.view === 'month') {
@@ -2667,7 +2746,7 @@ function todoApp() {
       const priority = task.priority;
       this._scrollPriorityTimer = setTimeout(() => {
         if (!this.tasks.find(t => t.id === taskId)) return;
-        self.apiFetch('/api/tasks/' + taskId, {
+        this.apiFetch('/api/tasks/' + taskId, {
           method: 'PUT',
           headers: {'Content-Type': 'application/json'},
           body: JSON.stringify({ priority }),
@@ -2702,6 +2781,26 @@ function todoApp() {
       if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 's') {
         event.preventDefault();
         this.saveNow();
+        return;
+      }
+
+      if (event.key === 'Enter') {
+        if (inInput) return;
+        const rows = this._taskRows();
+        if (!rows.length) return;
+        event.preventDefault();
+        if (!this.selectedTaskId) {
+          this._setSelectedTaskId(rows[0].dataset.taskId);
+          return;
+        }
+        this.toggleTaskSelection({ id: this.selectedTaskId });
+        return;
+      }
+
+      if (event.key === 'ArrowUp' || event.key === 'ArrowDown') {
+        if (inInput) return;
+        event.preventDefault();
+        this._moveSelection(event.key === 'ArrowUp' ? -1 : 1);
         return;
       }
 
