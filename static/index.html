@@ -1070,7 +1070,7 @@ html.light input[type="date"]::-webkit-calendar-picker-indicator {
       <template x-if="!isListView()">
         <button class="btn-ghost" @click="goToday()">Today</button>
       </template>
-      <button class="btn-ghost" @click="saveNow()" title="Sync now (Ctrl/Cmd + S) – auto-sync every 10s">&#x27f3;</button>
+      <button class="btn-ghost" @click="saveNow()" title="Sync (Ctrl + S) — auto-sync every 10s">&#x27f3; Sync</button>
       <template x-if="view !== 'projects'">
         <button class="btn-ghost" :class="{ active: showDone }" @click="showDone = !showDone"
                 x-text="showDone ? 'Hide done' : 'Show done'"></button>
