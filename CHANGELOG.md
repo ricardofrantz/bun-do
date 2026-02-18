@@ -1,5 +1,23 @@
 # Changelog
 
+## [v1.4.0] — 2026-02-18
+
+### Added
+- **Native macOS app** — `bun-do app` opens a lightweight WKWebView window (no Electron). Compiles Swift source on first run and caches the binary in `~/.bun-do/app/`.
+- Screenshot in README
+
+### Changed
+- **SKILL.md rewrite** — natural language mapping table, proactive patterns (morning briefing, weekly review), payment tracking examples
+- npm package only ships `bin/bun-do-webview.swift` instead of entire `bin/` directory
+
+### Fixed
+- **First-run empty tasks** — `tasks.example.json` wraps tasks in `{ "tasks": [...] }` but `parseTasks` expected a bare array, causing blank task list on first boot
+- Recurrence validation bypass — `parseTasks` now routes through `sanitizeRecurrence()` instead of raw cast
+- `child.pid` undefined guard when spawning background server
+- Removed stale `macapp` script referencing deleted `bin/bun-do.app`
+
+---
+
 ## [v1.3.0] — 2026-02-18
 
 ### Added
