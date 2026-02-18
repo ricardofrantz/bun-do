@@ -39,7 +39,7 @@ if (args.includes("--serve")) {
 // Parse command and --port
 const command =
   args.find((a) =>
-    ["start", "stop", "restart", "status", "open", "install-skill"].includes(a)
+    ["start", "stop", "restart", "status", "open", "app", "install-skill"].includes(a)
   ) || "start";
 const portArgs = args.filter((a) => a.startsWith("--port="));
 const port = portArgs[0]?.split("=")[1] || "8000";
@@ -136,6 +136,47 @@ function openBrowser() {
   spawn(cmd, [url], { detached: true, stdio: "ignore" }).unref();
 }
 
+async function openApp() {
+  if (process.platform !== "darwin") {
+    console.log("[bun-do] native app is macOS only — use 'bun-do open' for browser");
+    process.exit(1);
+  }
+
+  const cacheDir = join(DATA_DIR, "app");
+  const binary = join(cacheDir, "bun-do-webview");
+  const source = join(import.meta.dir, "bin", "bun-do-webview.swift");
+
+  // Compile on first run (caches in ~/.bun-do/app/)
+  if (!existsSync(binary)) {
+    if (!existsSync(source)) {
+      console.log("[bun-do] bin/bun-do-webview.swift not found in package");
+      process.exit(1);
+    }
+    console.log("[bun-do] compiling native app (first run only)...");
+    mkdirSync(cacheDir, { recursive: true });
+    const result = Bun.spawnSync([
+      "swiftc", "-o", binary, source, "-framework", "Cocoa", "-framework", "WebKit",
+    ]);
+    if (result.exitCode !== 0) {
+      console.log("[bun-do] swift compilation failed — do you have Xcode command line tools?");
+      console.log(result.stderr.toString());
+      process.exit(1);
+    }
+    console.log("[bun-do] compiled → " + binary);
+  }
+
+  // Start server if needed
+  await start();
+
+  // Launch native window
+  spawn(binary, [], {
+    detached: true,
+    stdio: "ignore",
+    env: { ...process.env, BUNDO_PORT: port },
+  }).unref();
+  console.log("[bun-do] native app opened");
+}
+
 function installSkill() {
   const src = join(import.meta.dir, "skill", "SKILL.md");
   if (!existsSync(src)) {
@@ -173,6 +214,9 @@ switch (command) {
   case "open":
     await start();
     openBrowser();
+    break;
+  case "app":
+    await openApp();
     break;
   case "install-skill":
     installSkill();

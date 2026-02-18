@@ -104,16 +104,13 @@ bun run start   # plain server on :8000
 ./bin/bun-do restart --example  # restart and reload data/tasks.example.json
 ```
 
-## macOS app (optional)
+## macOS native app (optional)
 
 ```bash
-./bin/bun-do.app start    # start backend + open app window
-./bin/bun-do.app stop     # stop backend
-./bin/bun-do.app status   # check running state
-./bin/bun-do.app restart  # restart backend
+bun-do app   # compiles on first run, then opens a native macOS window
 ```
 
-The app uses the same backend and storage (`BUNDO_DATA_DIR`), so browser and macOS modes share data.
+Uses a lightweight Swift WKWebView — no Electron, no browser chrome. Requires Xcode command line tools (`xcode-select --install`). The compiled binary is cached in `~/.bun-do/app/`.
 
 ## LLM Integration
 
