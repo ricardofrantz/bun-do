@@ -12,6 +12,7 @@ import {
   copyFileSync,
 } from "fs";
 import { spawn } from "child_process";
+import { createConnection } from "net";
 
 const DATA_DIR = process.env.BUNDO_DATA_DIR || join(homedir(), ".bun-do");
 if (!existsSync(DATA_DIR)) mkdirSync(DATA_DIR, { recursive: true });
@@ -60,13 +61,15 @@ function isRunning(pid: number): boolean {
 }
 
 async function waitForReady(): Promise<boolean> {
+  const portNum = parseInt(port);
   for (let i = 0; i < 40; i++) {
-    try {
-      await fetch(url);
-      return true;
-    } catch {
-      await Bun.sleep(100);
-    }
+    const up = await new Promise<boolean>((resolve) => {
+      const s = createConnection({ host: "127.0.0.1", port: portNum });
+      s.once("connect", () => { s.destroy(); resolve(true); });
+      s.once("error", () => resolve(false));
+    });
+    if (up) return true;
+    await Bun.sleep(100);
   }
   return false;
 }
