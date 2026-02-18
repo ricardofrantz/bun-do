@@ -107,7 +107,7 @@ async function start(): Promise<boolean> {
   });
   child.unref();
 
-  writeFileSync(PID_FILE, String(child.pid));
+  if (child.pid) writeFileSync(PID_FILE, String(child.pid));
 
   const pkg = JSON.parse(readFileSync(join(import.meta.dir, "package.json"), "utf-8"));
   const ready = await waitForReady();

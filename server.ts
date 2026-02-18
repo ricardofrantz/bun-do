@@ -220,7 +220,7 @@ function parseTasks(raw: unknown): Task[] {
         ? (item.type as Task["type"])
         : "task",
       subtasks: (item.subtasks as Subtask[]) || [],
-      recurrence: (item.recurrence as Recurrence) || null,
+      recurrence: sanitizeRecurrence(item.recurrence),
       sort_order: (item.sort_order as number) ?? 0,
       amount: String(item.amount ?? "").trim(),
       currency: validCurrency(item.currency),
@@ -230,7 +230,9 @@ function parseTasks(raw: unknown): Task[] {
 function loadTasksFromDisk(): Task[] {
   if (!existsSync(TASKS_PATH)) return [];
   try {
-    return parseTasks(JSON.parse(readFileSync(TASKS_PATH, "utf-8")));
+    const raw = JSON.parse(readFileSync(TASKS_PATH, "utf-8"));
+    const arr = Array.isArray(raw) ? raw : (raw?.tasks ?? []);
+    return parseTasks(arr);
   } catch {
     return [];
   }
