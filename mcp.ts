@@ -162,7 +162,7 @@ for await (const line of rl) {
     // notification — no response
   } else if (method === "tools/list") {
     send({ jsonrpc: "2.0", id, result: { tools: TOOLS } });
-  } else if (method === "ping") {
+  } else if (method === "ping" && id !== undefined) {
     send({ jsonrpc: "2.0", id, result: {} });
   } else if (method === "tools/call") {
     try {
