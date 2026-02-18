@@ -1,7 +1,7 @@
 {
   "name": "bun-do",
   "version": "1.2.1",
-  "description": "Fast local-first todo app — Bun + Alpine.js, zero dependencies",
+  "description": "Local-first todo app for humans and AI agents — REST API, MCP server, Claude/OpenClaw skill. Bun + Alpine.js.",
   "type": "module",
   "bin": {
     "bun-do": "cli.ts",
@@ -33,7 +33,11 @@
     "typescript",
     "json-storage",
     "calendar",
-    "no-dependencies"
+    "mcp",
+    "ai-agent",
+    "openclaw",
+    "claude",
+    "skill"
   ],
   "author": "Ricardo Frantz",
   "license": "BSD-3-Clause",

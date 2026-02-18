@@ -1,6 +1,6 @@
 # bun-do
 
-A fast, local-first todo app built on [Bun](https://bun.sh). One TypeScript file, one HTML file, zero dependencies.
+A fast, local-first todo app built on [Bun](https://bun.sh). One TypeScript file, one HTML file, zero runtime dependencies. Built to be used and controlled by AI agents.
 
 ![Bun](https://img.shields.io/badge/runtime-Bun-f9f1e1?logo=bun)
 ![TypeScript](https://img.shields.io/badge/lang-TypeScript-3178c6?logo=typescript&logoColor=white)
@@ -16,6 +16,7 @@ Most todo apps want you to sign up, sync to the cloud, or install an Electron ap
 - **JSON storage** — tasks and projects live in plain `.json` files you can version, grep, or edit by hand
 - **No build step** — Alpine.js + SortableJS vendored locally, works offline
 - **Self-hosted** — runs on `localhost`, your data never leaves your machine
+- **AI-native** — ships with an MCP server and installable skill for Claude Code and [OpenClaw](https://github.com/openclaw/openclaw)
 
 ## Features
 
@@ -114,52 +115,55 @@ The app uses the same backend and storage (`BUNDO_DATA_DIR`), so browser and mac
 
 ## LLM Integration
 
-bun-do ships two ways for LLMs to interact with your tasks.
+bun-do is designed to be your AI agent's task layer. It ships with two integration paths so any LLM stack can read, add, edit, and delete your tasks.
 
-### Option A — Skill (token-efficient, Claude Code / open-claw)
+### OpenClaw (recommended)
 
-A skill is a Markdown file that teaches the LLM how to call the bun-do REST API directly.
-Uses ~2% of the tokens that an MCP server requires.
+[OpenClaw](https://github.com/openclaw/openclaw) is a local-first personal AI assistant that routes your conversations from WhatsApp, Telegram, Slack, Discord, and more to Claude or any LLM — all running on your own machine.
+
+bun-do + OpenClaw = text your AI from anywhere and manage your tasks without leaving your messages.
+
+```
+You (WhatsApp) → "add P1 task: fix the deployment, due tomorrow"
+OpenClaw → bun-do skill → POST /api/tasks
+OpenClaw → "Done. Task added for Feb 19."
+```
+
+Install the skill for OpenClaw:
 
 ```bash
-bun-do install-skill   # copies skill to ~/.claude/skills/bun-do-api/
+bun-do install-skill --openclaw
+# copies to ~/.openclaw/workspace/skills/bun-do-api/SKILL.md
 ```
 
-Restart Claude Code (or start a new session). The LLM can now add, edit, delete, and
-list tasks by calling the API via `curl`.
+Restart OpenClaw to activate.
 
-### Option B — MCP server (Claude Desktop, opencode, any MCP client)
+### Claude Code / Claude Desktop
 
-`bun-do-mcp` is a stdio MCP server that exposes 6 tools:
+```bash
+bun-do install-skill
+# copies to ~/.claude/skills/bun-do-api/SKILL.md
+```
+
+Restart Claude Code or start a new session. Claude can now add, edit, and list tasks
+directly via the REST API using `curl`.
+
+### MCP server (any MCP client)
+
+`bun-do-mcp` is a stdio MCP server exposing 6 tools:
 `list_tasks`, `add_task`, `update_task`, `delete_task`, `list_projects`, `add_project_entry`.
 
-Add to your `.mcp.json` (project-level) or `~/.config/claude/claude_desktop_config.json`:
+Add to `.mcp.json` or `claude_desktop_config.json`:
 
 ```json
 {
   "mcpServers": {
-    "bun-do": {
-      "command": "bun-do-mcp"
-    }
+    "bun-do": { "command": "bun-do-mcp" }
   }
 }
 ```
 
-Custom port:
-
-```json
-{
-  "mcpServers": {
-    "bun-do": {
-      "command": "bun-do-mcp",
-      "env": { "BUNDO_PORT": "9000" }
-    }
-  }
-}
-```
-
-The MCP server talks to the bun-do REST API at `localhost:8000` (or `BUNDO_PORT`).
-Run `bun-do start` before using the MCP server.
+Custom port: `"env": { "BUNDO_PORT": "9000" }`. Run `bun-do start` first.
 
 ## Configuration
 

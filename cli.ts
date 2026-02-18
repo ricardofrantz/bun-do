@@ -138,16 +138,22 @@ function openBrowser() {
 
 function installSkill() {
   const src = join(import.meta.dir, "skill", "SKILL.md");
-  const destDir = join(homedir(), ".claude", "skills", "bun-do-api");
-  const dest = join(destDir, "SKILL.md");
   if (!existsSync(src)) {
     console.log("[bun-do] skill/SKILL.md not found in package");
     process.exit(1);
   }
+  const isOpenClaw = args.includes("--openclaw");
+  const destDir = isOpenClaw
+    ? join(homedir(), ".openclaw", "workspace", "skills", "bun-do-api")
+    : join(homedir(), ".claude", "skills", "bun-do-api");
   mkdirSync(destDir, { recursive: true });
-  copyFileSync(src, dest);
-  console.log(`[bun-do] skill installed → ${dest}`);
-  console.log("[bun-do] reload Claude Code to activate (or start a new session)");
+  copyFileSync(src, join(destDir, "SKILL.md"));
+  console.log(`[bun-do] skill installed → ${join(destDir, "SKILL.md")}`);
+  if (isOpenClaw) {
+    console.log("[bun-do] restart OpenClaw to activate");
+  } else {
+    console.log("[bun-do] reload Claude Code to activate (or start a new session)");
+  }
 }
 
 switch (command) {
