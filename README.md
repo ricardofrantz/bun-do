@@ -8,6 +8,8 @@ A fast, local-first todo app built on [Bun](https://bun.sh). One TypeScript file
 ![License](https://img.shields.io/badge/license-BSD--3--Clause-blue)
 ![npm](https://img.shields.io/npm/v/bun-do)
 
+![bun-do screenshot](bun-do.png)
+
 ## Why bun-do?
 
 Most todo apps want you to sign up, sync to the cloud, or install an Electron app. **bun-do** is different:
