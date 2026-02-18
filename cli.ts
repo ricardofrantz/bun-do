@@ -29,11 +29,11 @@ if (args.includes("--version") || args.includes("-v")) {
 }
 
 // --serve: internal flag — run server in foreground (used by background spawner)
+// Must be checked before service manager code — execution must not fall through.
 if (args.includes("--serve")) {
   await import("./server.ts");
-  // server.ts calls Bun.serve() which keeps the event loop alive — don't exit
-}
-
+  // server.ts calls Bun.serve() which keeps the event loop alive
+} else {
 // Parse command and --port
 const command =
   args.find((a) => ["start", "stop", "restart", "status", "open"].includes(a)) ||
@@ -150,3 +150,4 @@ switch (command) {
     openBrowser();
     break;
 }
+} // end else (service manager)
