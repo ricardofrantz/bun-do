@@ -1,6 +1,6 @@
 {
   "name": "bun-do",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "description": "Fast local-first todo app — Bun + Alpine.js, zero dependencies",
   "type": "module",
   "bin": {
