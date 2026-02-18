@@ -162,12 +162,14 @@ for await (const line of rl) {
     // notification — no response
   } else if (method === "tools/list") {
     send({ jsonrpc: "2.0", id, result: { tools: TOOLS } });
+  } else if (method === "ping") {
+    send({ jsonrpc: "2.0", id, result: {} });
   } else if (method === "tools/call") {
-    const { name, arguments: args = {} } = params as {
-      name: string;
-      arguments?: Record<string, unknown>;
-    };
     try {
+      const { name, arguments: args = {} } = (params ?? {}) as {
+        name: string;
+        arguments?: Record<string, unknown>;
+      };
       const text = await handleCall(name, args);
       send({ jsonrpc: "2.0", id, result: { content: [{ type: "text", text }] } });
     } catch (err) {
