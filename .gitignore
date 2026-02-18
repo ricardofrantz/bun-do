@@ -3,6 +3,8 @@ logfile/
 .venv/
 __pycache__/
 .bun-do-macapp/
+.bun-do-macapp-test/
+.bun-do-macapp-test-data/
 
 # Data files (personal), but keep the example
 data/*.json

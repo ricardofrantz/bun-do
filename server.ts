@@ -1,6 +1,6 @@
 // server.ts — Todo app backend (Bun, zero dependencies)
 
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from "fs";
+import { existsSync, mkdirSync, readFileSync, renameSync, writeFileSync } from "fs";
 import { extname, join, resolve } from "path";
 
 // ---------------------------------------------------------------------------
@@ -24,10 +24,10 @@ interface Task {
   id: string;
   title: string;
   date: string;
-  priority: string;
+  priority: "P0" | "P1" | "P2" | "P3";
   notes: string;
   done: boolean;
-  type: string;
+  type: "task" | "deadline" | "reminder" | "payment";
   subtasks: Subtask[];
   recurrence: Recurrence | null;
   sort_order: number;
@@ -45,7 +45,7 @@ interface Project {
   id: string;
   name: string;
   repo: string;
-  status: string;
+  status: "active" | "paused" | "completed" | "archived";
   description: string;
   entries: Entry[];
 }
@@ -60,12 +60,12 @@ const TASKS_PATH = join(DATA_DIR, "tasks.json");
 const PROJECTS_PATH = join(DATA_DIR, "projects.json");
 const STATIC_DIR = join(PKG_DIR, "static");
 
-const PRIORITY_LABELS = ["P0", "P1", "P2", "P3"];
+const PRIORITY_LABELS = ["P0", "P1", "P2", "P3"] as const;
 const PRIORITY_ORDER: Record<string, number> = { P0: 0, P1: 1, P2: 2, P3: 3 };
-const TASK_TYPES = ["task", "deadline", "reminder", "payment"];
+const TASK_TYPES = ["task", "deadline", "reminder", "payment"] as const;
 const CURRENCIES = ["CHF", "USD", "EUR", "BRL"];
 const RECURRENCE_TYPES = ["weekly", "monthly", "yearly"];
-const PROJECT_STATUSES = ["active", "paused", "completed", "archived"];
+const PROJECT_STATUSES = ["active", "paused", "completed", "archived"] as const;
 
 function sanitizeRecurrence(raw: unknown): Recurrence | null {
   if (!raw || typeof raw !== "object") return null;
@@ -131,7 +131,6 @@ function today(): string {
 
 function isoToDate(value: string | null | undefined): string {
   if (!value) return today();
-  // Validate YYYY-MM-DD format
   if (/^\d{4}-\d{2}-\d{2}$/.test(value)) {
     const [y, m, d] = value.split("-").map(Number);
     const date = new Date(y, m - 1, d);
@@ -151,13 +150,13 @@ function nextOccurrence(currentDate: string, recurrence: Recurrence): string {
 
   if (rtype === "weekly") {
     const dow = recurrence.dow ?? (date.getDay() === 0 ? 6 : date.getDay() - 1);
-    // Convert JS day (0=Sun) to Python-style (0=Mon)
+    // Convert JS day (0=Sun) to Mon-based (0=Mon)
     const currentDow = date.getDay() === 0 ? 6 : date.getDay() - 1;
     let daysAhead = dow - currentDow;
     if (daysAhead <= 0) daysAhead += 7;
     const next = new Date(date);
     next.setDate(next.getDate() + daysAhead);
-    return fmt(next);
+    return formatDate(next);
   }
 
   if (rtype === "monthly") {
@@ -182,13 +181,12 @@ function nextOccurrence(currentDate: string, recurrence: Recurrence): string {
     return `${nextYear}-${String(month).padStart(2, "0")}-${String(Math.min(day, maxDay)).padStart(2, "0")}`;
   }
 
-  // Fallback: next day
   const next = new Date(date);
   next.setDate(next.getDate() + 1);
-  return fmt(next);
+  return formatDate(next);
 }
 
-function fmt(d: Date): string {
+function formatDate(d: Date): string {
   return (
     d.getFullYear() +
     "-" +
@@ -199,44 +197,46 @@ function fmt(d: Date): string {
 }
 
 // ---------------------------------------------------------------------------
-// Data helpers
+// In-memory store + atomic persistence
 // ---------------------------------------------------------------------------
 
-function loadTasks(): Task[] {
+let tasks: Task[] = [];
+let projects: Project[] = [];
+
+function parseTasks(raw: unknown): Task[] {
+  if (!Array.isArray(raw)) return [];
+  return raw
+    .filter((item: unknown) => typeof item === "object" && item !== null)
+    .map((item: Record<string, unknown>) => ({
+      id: (item.id as string) || crypto.randomUUID(),
+      title: String(item.title ?? "").trim() || "Untitled task",
+      date: isoToDate(item.date as string),
+      priority: PRIORITY_LABELS.includes(item.priority as Task["priority"])
+        ? (item.priority as Task["priority"])
+        : "P2",
+      notes: String(item.notes ?? "").trim(),
+      done: Boolean(item.done),
+      type: TASK_TYPES.includes(item.type as Task["type"])
+        ? (item.type as Task["type"])
+        : "task",
+      subtasks: (item.subtasks as Subtask[]) || [],
+      recurrence: (item.recurrence as Recurrence) || null,
+      sort_order: (item.sort_order as number) ?? 0,
+      amount: String(item.amount ?? "").trim(),
+      currency: validCurrency(item.currency),
+    }));
+}
+
+function loadTasksFromDisk(): Task[] {
   if (!existsSync(TASKS_PATH)) return [];
   try {
-    const raw = JSON.parse(readFileSync(TASKS_PATH, "utf-8"));
-    if (!Array.isArray(raw)) return [];
-    return raw
-      .filter((item: unknown) => typeof item === "object" && item !== null)
-      .map((item: Record<string, unknown>) => ({
-        id: (item.id as string) || crypto.randomUUID(),
-        title: String(item.title ?? "").trim() || "Untitled task",
-        date: isoToDate(item.date as string),
-        priority: PRIORITY_LABELS.includes(item.priority as string)
-          ? (item.priority as string)
-          : "P2",
-        notes: String(item.notes ?? "").trim(),
-        done: Boolean(item.done),
-        type: TASK_TYPES.includes(item.type as string)
-          ? (item.type as string)
-          : "task",
-        subtasks: (item.subtasks as Subtask[]) || [],
-        recurrence: (item.recurrence as Recurrence) || null,
-        sort_order: (item.sort_order as number) ?? 0,
-        amount: String(item.amount ?? "").trim(),
-        currency: validCurrency(item.currency),
-      }));
+    return parseTasks(JSON.parse(readFileSync(TASKS_PATH, "utf-8")));
   } catch {
     return [];
   }
 }
 
-function saveTasks(tasks: Task[]): void {
-  writeFileSync(TASKS_PATH, JSON.stringify(tasks, null, 2));
-}
-
-function loadProjects(): Project[] {
+function loadProjectsFromDisk(): Project[] {
   if (!existsSync(PROJECTS_PATH)) return [];
   try {
     const raw = JSON.parse(readFileSync(PROJECTS_PATH, "utf-8"));
@@ -247,9 +247,29 @@ function loadProjects(): Project[] {
   }
 }
 
-function saveProjects(projects: Project[]): void {
-  writeFileSync(PROJECTS_PATH, JSON.stringify(projects, null, 2));
+function saveTasks(): void {
+  const tmp = TASKS_PATH + ".tmp";
+  writeFileSync(tmp, JSON.stringify(tasks, null, 2));
+  renameSync(tmp, TASKS_PATH);
 }
+
+function saveProjects(): void {
+  const tmp = PROJECTS_PATH + ".tmp";
+  writeFileSync(tmp, JSON.stringify(projects, null, 2));
+  renameSync(tmp, PROJECTS_PATH);
+}
+
+function findTask(id: string): Task | undefined {
+  return tasks.find((t) => t.id === id);
+}
+
+function findProject(id: string): Project | undefined {
+  return projects.find((p) => p.id === id);
+}
+
+// ---------------------------------------------------------------------------
+// Business logic
+// ---------------------------------------------------------------------------
 
 function createNextRecurring(task: Task): Task {
   const nextDate = nextOccurrence(task.date, task.recurrence!);
@@ -273,7 +293,7 @@ function createNextRecurring(task: Task): Task {
   };
 }
 
-function carryOver(tasks: Task[], todayStr: string): number {
+function carryOver(todayStr: string): number {
   let moved = 0;
   for (const task of tasks) {
     if (task.done) continue;
@@ -284,12 +304,12 @@ function carryOver(tasks: Task[], todayStr: string): number {
       moved++;
     }
   }
-  if (moved) saveTasks(tasks);
+  if (moved) saveTasks();
   return moved;
 }
 
-function sortTasks(tasks: Task[]): Task[] {
-  return [...tasks].sort((a, b) => {
+function sortTasks(list: Task[]): Task[] {
+  return [...list].sort((a, b) => {
     if (a.date !== b.date) return a.date < b.date ? -1 : 1;
     const pa = PRIORITY_ORDER[a.priority] ?? 99;
     const pb = PRIORITY_ORDER[b.priority] ?? 99;
@@ -320,16 +340,12 @@ function notFound(detail: string): Response {
 // -- Tasks --
 
 function handleGetTasks(): Response {
-  const tasks = loadTasks();
-  const moved = carryOver(tasks, today());
+  const moved = carryOver(today());
   return json({ tasks: sortTasks(tasks), carried_over: moved });
 }
 
 async function handleCreateTask(req: Request): Promise<Response> {
   const body = await parseJson(req);
-  const tasks = loadTasks();
-  const taskType = TASK_TYPES.includes(body.type) ? body.type : "task";
-  const recurrence = sanitizeRecurrence(body.recurrence);
   const newTask: Task = {
     id: crypto.randomUUID(),
     title: String(body.title ?? "").trim() || "Untitled task",
@@ -337,15 +353,15 @@ async function handleCreateTask(req: Request): Promise<Response> {
     priority: PRIORITY_LABELS.includes(body.priority) ? body.priority : "P2",
     notes: String(body.notes ?? "").trim(),
     done: false,
-    type: taskType,
+    type: TASK_TYPES.includes(body.type) ? body.type : "task",
     subtasks: [],
-    recurrence,
+    recurrence: sanitizeRecurrence(body.recurrence),
     sort_order: 0,
     amount: String(body.amount ?? "").trim(),
     currency: validCurrency(body.currency),
   };
   tasks.push(newTask);
-  saveTasks(tasks);
+  saveTasks();
   return json(newTask);
 }
 
@@ -353,75 +369,52 @@ async function handleReorderTasks(req: Request): Promise<Response> {
   const body = await parseJson(req);
   const ids = validateIds(body.ids);
   if (!ids) return json({ detail: "ids must be a string array" }, 400);
-  const tasks = loadTasks();
   const idToOrder: Record<string, number> = {};
   ids.forEach((id, i) => (idToOrder[id] = i));
   for (const task of tasks) {
-    if (task.id in idToOrder) {
-      task.sort_order = idToOrder[task.id];
-    }
+    if (task.id in idToOrder) task.sort_order = idToOrder[task.id];
   }
-  saveTasks(tasks);
+  saveTasks();
   return json({ ok: true });
 }
 
 function handleClearDone(): Response {
-  const tasks = loadTasks();
-  const remaining = tasks.filter((t) => !t.done);
-  const cleared = tasks.length - remaining.length;
-  saveTasks(remaining);
+  const before = tasks.length;
+  tasks = tasks.filter((t) => !t.done);
+  const cleared = before - tasks.length;
+  saveTasks();
   return json({ cleared });
 }
 
 async function handleUpdateTask(taskId: string, req: Request): Promise<Response> {
   const body = await parseJson(req);
-  const tasks = loadTasks();
-  for (const task of tasks) {
-    if (task.id === taskId) {
-      if (body.title !== undefined) {
-        task.title = String(body.title).trim() || task.title;
-      }
-      if (body.date !== undefined) {
-        task.date = isoToDate(body.date);
-      }
-      if (body.priority !== undefined && PRIORITY_LABELS.includes(body.priority)) {
-        task.priority = body.priority;
-      }
-      if (body.notes !== undefined) {
-        task.notes = String(body.notes).trim();
-      }
-      if (body.type !== undefined && TASK_TYPES.includes(body.type)) {
-        task.type = body.type;
-      }
-      if (body.amount !== undefined) {
-        task.amount = String(body.amount).trim();
-      }
-      if (body.currency !== undefined && CURRENCIES.includes(body.currency)) {
-        task.currency = body.currency;
-      }
-      if (body.recurrence !== undefined) {
-        task.recurrence = sanitizeRecurrence(body.recurrence);
-      }
-      if (body.done !== undefined) {
-        const wasDone = task.done;
-        task.done = Boolean(body.done);
-        if (body.done && !wasDone && task.recurrence) {
-          const nextTask = createNextRecurring(task);
-          tasks.push(nextTask);
-        }
-      }
-      saveTasks(tasks);
-      return json(task);
+  const task = findTask(taskId);
+  if (!task) return notFound("Task not found");
+
+  if (body.title !== undefined) task.title = String(body.title).trim() || task.title;
+  if (body.date !== undefined) task.date = isoToDate(body.date);
+  if (body.priority !== undefined && PRIORITY_LABELS.includes(body.priority)) task.priority = body.priority;
+  if (body.notes !== undefined) task.notes = String(body.notes).trim();
+  if (body.type !== undefined && TASK_TYPES.includes(body.type)) task.type = body.type;
+  if (body.amount !== undefined) task.amount = String(body.amount).trim();
+  if (body.currency !== undefined && CURRENCIES.includes(body.currency)) task.currency = body.currency;
+  if (body.recurrence !== undefined) task.recurrence = sanitizeRecurrence(body.recurrence);
+  if (body.done !== undefined) {
+    const wasDone = task.done;
+    task.done = Boolean(body.done);
+    if (body.done && !wasDone && task.recurrence) {
+      tasks.push(createNextRecurring(task));
     }
   }
-  return notFound("Task not found");
+  saveTasks();
+  return json(task);
 }
 
 function handleDeleteTask(taskId: string): Response {
-  const tasks = loadTasks();
-  const filtered = tasks.filter((t) => t.id !== taskId);
-  if (filtered.length === tasks.length) return notFound("Task not found");
-  saveTasks(filtered);
+  const before = tasks.length;
+  tasks = tasks.filter((t) => t.id !== taskId);
+  if (tasks.length === before) return notFound("Task not found");
+  saveTasks();
   return json({ ok: true });
 }
 
@@ -429,91 +422,64 @@ function handleDeleteTask(taskId: string): Response {
 
 async function handleAddSubtask(taskId: string, req: Request): Promise<Response> {
   const body = await parseJson(req);
-  const tasks = loadTasks();
-  for (const task of tasks) {
-    if (task.id === taskId) {
-      const subtask: Subtask = {
-        id: crypto.randomUUID(),
-        title: String(body.title ?? "").trim() || "Untitled subtask",
-        done: false,
-      };
-      task.subtasks.push(subtask);
-      saveTasks(tasks);
-      return json(subtask);
-    }
-  }
-  return notFound("Task not found");
+  const task = findTask(taskId);
+  if (!task) return notFound("Task not found");
+  const subtask: Subtask = {
+    id: crypto.randomUUID(),
+    title: String(body.title ?? "").trim() || "Untitled subtask",
+    done: false,
+  };
+  task.subtasks.push(subtask);
+  saveTasks();
+  return json(subtask);
 }
 
-async function handleUpdateSubtask(
-  taskId: string,
-  subId: string,
-  req: Request,
-): Promise<Response> {
+async function handleUpdateSubtask(taskId: string, subId: string, req: Request): Promise<Response> {
   const body = await parseJson(req);
-  const tasks = loadTasks();
-  for (const task of tasks) {
-    if (task.id === taskId) {
-      for (const sub of task.subtasks) {
-        if (sub.id === subId) {
-          if (body.done !== undefined) sub.done = Boolean(body.done);
-          if (body.title !== undefined) {
-            sub.title = String(body.title).trim() || sub.title;
-          }
-          saveTasks(tasks);
-          return json(sub);
-        }
-      }
-      return notFound("Subtask not found");
-    }
-  }
-  return notFound("Task not found");
+  const task = findTask(taskId);
+  if (!task) return notFound("Task not found");
+  const sub = task.subtasks.find((s) => s.id === subId);
+  if (!sub) return notFound("Subtask not found");
+  if (body.done !== undefined) sub.done = Boolean(body.done);
+  if (body.title !== undefined) sub.title = String(body.title).trim() || sub.title;
+  saveTasks();
+  return json(sub);
 }
 
 function handleDeleteSubtask(taskId: string, subId: string): Response {
-  const tasks = loadTasks();
-  for (const task of tasks) {
-    if (task.id === taskId) {
-      const before = task.subtasks.length;
-      task.subtasks = task.subtasks.filter((s) => s.id !== subId);
-      if (task.subtasks.length === before) return notFound("Subtask not found");
-      saveTasks(tasks);
-      return json({ ok: true });
-    }
-  }
-  return notFound("Task not found");
+  const task = findTask(taskId);
+  if (!task) return notFound("Task not found");
+  const before = task.subtasks.length;
+  task.subtasks = task.subtasks.filter((s) => s.id !== subId);
+  if (task.subtasks.length === before) return notFound("Subtask not found");
+  saveTasks();
+  return json({ ok: true });
 }
 
 async function handleReorderSubtasks(taskId: string, req: Request): Promise<Response> {
   const body = await parseJson(req);
   const ids = validateIds(body.ids);
   if (!ids) return json({ detail: "ids must be a string array" }, 400);
-  const tasks = loadTasks();
-  for (const task of tasks) {
-    if (task.id === taskId) {
-      const byId = new Map(task.subtasks.map((s) => [s.id, s]));
-      const reordered = ids.map((id) => byId.get(id)).filter(Boolean) as Subtask[];
-      // Append any subtasks not in the ids list (safety)
-      for (const s of task.subtasks) {
-        if (!ids.includes(s.id)) reordered.push(s);
-      }
-      task.subtasks = reordered;
-      saveTasks(tasks);
-      return json({ ok: true });
-    }
+  const task = findTask(taskId);
+  if (!task) return notFound("Task not found");
+  const byId = new Map(task.subtasks.map((s) => [s.id, s]));
+  const reordered = ids.map((id) => byId.get(id)).filter(Boolean) as Subtask[];
+  for (const s of task.subtasks) {
+    if (!ids.includes(s.id)) reordered.push(s);
   }
-  return notFound("Task not found");
+  task.subtasks = reordered;
+  saveTasks();
+  return json({ ok: true });
 }
 
 // -- Projects --
 
 function handleGetProjects(): Response {
-  return json({ projects: loadProjects() });
+  return json({ projects });
 }
 
 async function handleCreateProject(req: Request): Promise<Response> {
   const body = await parseJson(req);
-  const projects = loadProjects();
   const project: Project = {
     id: crypto.randomUUID(),
     name: String(body.name ?? "").trim() || "Untitled project",
@@ -523,72 +489,52 @@ async function handleCreateProject(req: Request): Promise<Response> {
     entries: [],
   };
   projects.push(project);
-  saveProjects(projects);
+  saveProjects();
   return json(project);
 }
 
 async function handleUpdateProject(projectId: string, req: Request): Promise<Response> {
   const body = await parseJson(req);
-  const projects = loadProjects();
-  for (const proj of projects) {
-    if (proj.id === projectId) {
-      if (body.name !== undefined) {
-        proj.name = String(body.name).trim() || proj.name;
-      }
-      if (body.repo !== undefined) {
-        proj.repo = safeUrl(body.repo);
-      }
-      if (body.status !== undefined && PROJECT_STATUSES.includes(body.status)) {
-        proj.status = body.status;
-      }
-      if (body.description !== undefined) {
-        proj.description = String(body.description).trim();
-      }
-      saveProjects(projects);
-      return json(proj);
-    }
-  }
-  return notFound("Project not found");
+  const proj = findProject(projectId);
+  if (!proj) return notFound("Project not found");
+  if (body.name !== undefined) proj.name = String(body.name).trim() || proj.name;
+  if (body.repo !== undefined) proj.repo = safeUrl(body.repo);
+  if (body.status !== undefined && PROJECT_STATUSES.includes(body.status)) proj.status = body.status;
+  if (body.description !== undefined) proj.description = String(body.description).trim();
+  saveProjects();
+  return json(proj);
 }
 
 function handleDeleteProject(projectId: string): Response {
-  const projects = loadProjects();
-  const filtered = projects.filter((p) => p.id !== projectId);
-  if (filtered.length === projects.length) return notFound("Project not found");
-  saveProjects(filtered);
+  const before = projects.length;
+  projects = projects.filter((p) => p.id !== projectId);
+  if (projects.length === before) return notFound("Project not found");
+  saveProjects();
   return json({ ok: true });
 }
 
 async function handleAddEntry(projectId: string, req: Request): Promise<Response> {
   const body = await parseJson(req);
-  const projects = loadProjects();
-  for (const proj of projects) {
-    if (proj.id === projectId) {
-      const entry: Entry = {
-        id: crypto.randomUUID(),
-        date: isoToDate(body.date),
-        summary: String(body.summary ?? "").trim() || "No summary",
-      };
-      proj.entries.push(entry);
-      saveProjects(projects);
-      return json(entry);
-    }
-  }
-  return notFound("Project not found");
+  const proj = findProject(projectId);
+  if (!proj) return notFound("Project not found");
+  const entry: Entry = {
+    id: crypto.randomUUID(),
+    date: isoToDate(body.date),
+    summary: String(body.summary ?? "").trim() || "No summary",
+  };
+  proj.entries.push(entry);
+  saveProjects();
+  return json(entry);
 }
 
 function handleDeleteEntry(projectId: string, entryId: string): Response {
-  const projects = loadProjects();
-  for (const proj of projects) {
-    if (proj.id === projectId) {
-      const before = proj.entries.length;
-      proj.entries = proj.entries.filter((e) => e.id !== entryId);
-      if (proj.entries.length === before) return notFound("Entry not found");
-      saveProjects(projects);
-      return json({ ok: true });
-    }
-  }
-  return notFound("Project not found");
+  const proj = findProject(projectId);
+  if (!proj) return notFound("Project not found");
+  const before = proj.entries.length;
+  proj.entries = proj.entries.filter((e) => e.id !== entryId);
+  if (proj.entries.length === before) return notFound("Entry not found");
+  saveProjects();
+  return json({ ok: true });
 }
 
 // ---------------------------------------------------------------------------
@@ -604,9 +550,7 @@ async function handleRequest(req: Request): Promise<Response> {
   if (path === "/" || path === "/index.html") {
     const file = Bun.file(join(STATIC_DIR, "index.html"));
     if (await file.exists()) {
-      return new Response(file, {
-        headers: { "Content-Type": "text/html" },
-      });
+      return new Response(file, { headers: { "Content-Type": "text/html" } });
     }
     return new Response("Not found", { status: 404 });
   }
@@ -618,9 +562,7 @@ async function handleRequest(req: Request): Promise<Response> {
     const file = Bun.file(resolved);
     if (await file.exists()) {
       const ext = extname(filepath);
-      return new Response(file, {
-        headers: { "Content-Type": MIME[ext] || "application/octet-stream" },
-      });
+      return new Response(file, { headers: { "Content-Type": MIME[ext] || "application/octet-stream" } });
     }
     return new Response("Not found", { status: 404 });
   }
@@ -636,37 +578,22 @@ async function handleRequest(req: Request): Promise<Response> {
   // -- API routes --
   let match: RegExpMatchArray | null;
 
-  // Tasks
-  if (path === "/api/tasks" && method === "GET") {
-    return handleGetTasks();
-  }
-  if (path === "/api/tasks" && method === "POST") {
-    return handleCreateTask(req);
-  }
-  if (path === "/api/tasks/reorder" && method === "POST") {
-    return handleReorderTasks(req);
-  }
-  if (path === "/api/tasks/clear-done" && method === "POST") {
-    return handleClearDone();
-  }
+  if (path === "/api/tasks" && method === "GET") return handleGetTasks();
+  if (path === "/api/tasks" && method === "POST") return handleCreateTask(req);
+  if (path === "/api/tasks/reorder" && method === "POST") return handleReorderTasks(req);
+  if (path === "/api/tasks/clear-done" && method === "POST") return handleClearDone();
 
-  // Task by ID
   match = path.match(/^\/api\/tasks\/([^/]+)$/);
   if (match) {
     if (method === "PUT") return handleUpdateTask(match[1], req);
     if (method === "DELETE") return handleDeleteTask(match[1]);
   }
 
-  // Subtasks
   match = path.match(/^\/api\/tasks\/([^/]+)\/subtasks\/reorder$/);
-  if (match && method === "POST") {
-    return handleReorderSubtasks(match[1], req);
-  }
+  if (match && method === "POST") return handleReorderSubtasks(match[1], req);
 
   match = path.match(/^\/api\/tasks\/([^/]+)\/subtasks$/);
-  if (match && method === "POST") {
-    return handleAddSubtask(match[1], req);
-  }
+  if (match && method === "POST") return handleAddSubtask(match[1], req);
 
   match = path.match(/^\/api\/tasks\/([^/]+)\/subtasks\/([^/]+)$/);
   if (match) {
@@ -674,13 +601,8 @@ async function handleRequest(req: Request): Promise<Response> {
     if (method === "DELETE") return handleDeleteSubtask(match[1], match[2]);
   }
 
-  // Projects
-  if (path === "/api/projects" && method === "GET") {
-    return handleGetProjects();
-  }
-  if (path === "/api/projects" && method === "POST") {
-    return handleCreateProject(req);
-  }
+  if (path === "/api/projects" && method === "GET") return handleGetProjects();
+  if (path === "/api/projects" && method === "POST") return handleCreateProject(req);
 
   match = path.match(/^\/api\/projects\/([^/]+)$/);
   if (match) {
@@ -688,16 +610,11 @@ async function handleRequest(req: Request): Promise<Response> {
     if (method === "DELETE") return handleDeleteProject(match[1]);
   }
 
-  // Project entries
   match = path.match(/^\/api\/projects\/([^/]+)\/entries$/);
-  if (match && method === "POST") {
-    return handleAddEntry(match[1], req);
-  }
+  if (match && method === "POST") return handleAddEntry(match[1], req);
 
   match = path.match(/^\/api\/projects\/([^/]+)\/entries\/([^/]+)$/);
-  if (match && method === "DELETE") {
-    return handleDeleteEntry(match[1], match[2]);
-  }
+  if (match && method === "DELETE") return handleDeleteEntry(match[1], match[2]);
 
   return new Response("Not found", { status: 404 });
 }
@@ -706,12 +623,8 @@ async function handleRequest(req: Request): Promise<Response> {
 // Bootstrap & Start
 // ---------------------------------------------------------------------------
 
-// Ensure data directory exists
-if (!existsSync(DATA_DIR)) {
-  mkdirSync(DATA_DIR, { recursive: true });
-}
+if (!existsSync(DATA_DIR)) mkdirSync(DATA_DIR, { recursive: true });
 if (!existsSync(TASKS_PATH)) {
-  // Seed with example data if available, otherwise empty
   const examplePath = join(PKG_DIR, "data", "tasks.example.json");
   const seed = existsSync(examplePath) ? readFileSync(examplePath, "utf-8") : "[]";
   writeFileSync(TASKS_PATH, seed);
@@ -720,7 +633,10 @@ if (!existsSync(PROJECTS_PATH)) {
   writeFileSync(PROJECTS_PATH, "[]");
 }
 
-// Parse --port from CLI args
+// Load data into memory once at startup
+tasks = loadTasksFromDisk();
+projects = loadProjectsFromDisk();
+
 const portArg = Bun.argv.find((a) => a.startsWith("--port="));
 const port = portArg ? parseInt(portArg.split("=")[1]) : 8000;
 
