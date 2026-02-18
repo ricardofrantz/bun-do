@@ -17,6 +17,7 @@
     "bin/",
     "AGENTS.md",
     "README.md",
+    "CHANGELOG.md",
     "LICENSE"
   ],
   "scripts": {
