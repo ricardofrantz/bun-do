@@ -14,7 +14,7 @@ Most todo apps want you to sign up, sync to the cloud, or install an Electron ap
 
 - **Single-file server** — `server.ts` serves both the API and frontend
 - **JSON storage** — tasks and projects live in plain `.json` files you can version, grep, or edit by hand
-- **No build step** — Alpine.js + SortableJS loaded from CDN, no bundler needed
+- **No build step** — Alpine.js + SortableJS vendored locally, works offline
 - **Self-hosted** — runs on `localhost`, your data never leaves your machine
 
 ## Features
@@ -43,7 +43,40 @@ Most todo apps want you to sign up, sync to the cloud, or install an Electron ap
 - Error toasts on failed API calls
 - Light / dark theme
 
-## Quick start
+## Quick start (npm)
+
+```bash
+bun install -g bun-do
+bun-do          # start server + print URL
+bun-do open     # start server + open in browser
+```
+
+Data is stored in `~/.bun-do`.
+
+### Service manager commands
+
+```bash
+bun-do start     # start background server (default)
+bun-do stop      # stop background server
+bun-do restart   # restart background server
+bun-do status    # check running state
+bun-do open      # start + open in browser
+bun-do --version # print version
+```
+
+Custom port:
+
+```bash
+bun-do start --port=9000
+```
+
+### Run without installing
+
+```bash
+bunx bun-do
+```
+
+## Quick start (source)
 
 ```bash
 git clone https://github.com/ricardofrantz/bun-do.git
@@ -58,36 +91,7 @@ Or without hot reload:
 bun run start   # plain server on :8000
 ```
 
-### Install from npm (alternative)
-
-```bash
-bunx bun-do              # run directly
-bun install -g bun-do    # or install globally, then: bun-do
-```
-
-Data is stored in `~/.bun-do` when installed via npm.
-
-
-## macOS app option (optional)
-
-If you want bun-do as a desktop-style app on macOS:
-
-```bash
-./bin/bun-do.app start   # start backend + open app window
-./bin/bun-do.app stop    # stop backend
-./bin/bun-do.app status  # check running state
-./bin/bun-do.app restart # restart backend
-```
-
-The app script keeps using the same backend and storage (`BUNDO_DATA_DIR`), so browser and macOS modes share data.
-
-You can customize port with:
-
-```bash
-TODO_PORT=9010 ./bin/bun-do.app start
-```
-
-### Background service
+### Background service (source clone)
 
 ```bash
 ./bin/bun-do              # start
@@ -97,21 +101,28 @@ TODO_PORT=9010 ./bin/bun-do.app start
 ./bin/bun-do restart --example  # restart and reload data/tasks.example.json
 ```
 
+## macOS app (optional)
+
+```bash
+./bin/bun-do.app start    # start backend + open app window
+./bin/bun-do.app stop     # stop backend
+./bin/bun-do.app status   # check running state
+./bin/bun-do.app restart  # restart backend
+```
+
+The app uses the same backend and storage (`BUNDO_DATA_DIR`), so browser and macOS modes share data.
+
 ## Configuration
 
 | Variable | Default | Description |
 |---|---|---|
-| `TODO_PORT` | `8000` | Server port (used by `bin/` scripts) |
 | `BUNDO_DATA_DIR` | `./data` (source) / `~/.bun-do` (npm) | Directory for JSON data files |
 
-To use a custom data directory, set it in your shell profile:
+To use a custom data directory:
 
 ```bash
 export BUNDO_DATA_DIR=~/my-tasks
-```
-
-```bash
-TODO_PORT=9000 BUNDO_DATA_DIR=~/my-tasks bun run start
+bun-do restart
 ```
 
 ## Data
@@ -154,7 +165,7 @@ On first run, `tasks.example.json` seeds `tasks.json` if it doesn't exist.
 |---|---|
 | Runtime | [Bun](https://bun.sh) |
 | Server | `Bun.serve()` — zero-dependency HTTP |
-| Frontend | [Alpine.js](https://alpinejs.dev) + [SortableJS](https://sortablejs.github.io/Sortable/) (CDN) |
+| Frontend | [Alpine.js](https://alpinejs.dev) + [SortableJS](https://sortablejs.github.io/Sortable/) (vendored) |
 | Storage | Flat JSON files |
 
 ## License
