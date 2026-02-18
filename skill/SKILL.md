@@ -6,20 +6,39 @@ description: >
   user says "add a todo", "update task", "remove task", "mark done", "add
   subtask", "log progress", "update project", or any variant of managing
   tasks/projects. Also use when an agent finishes work and needs to record
-  progress.
+  progress. Triggers on: "todo", "task", "remind me", "due", "deadline",
+  "payment", "bill", "backlog", "what do I need to do", "what's overdue",
+  "add to my list".
 ---
 
-# bun-do API
+# bun-do — your local task backend
 
-REST API running at `http://localhost:8000`. The server must be running.
+> "Add P1 task: renew passport, due March 30, recurring yearly, with €85 payment"
 
-**Start**: `bun-do start` (installed globally via `npm install -g bun-do`)
-**Data dir**: `~/.bun-do/` (override with `BUNDO_DATA_DIR`)
-**Port**: default 8000, override with `--port=PORT`
+bun-do is a local-first todo app. REST API at `http://localhost:8000`. All data persists to JSON on disk. Nothing leaves your machine.
 
-All mutations persist immediately to JSON files on disk.
+**Start**: `bun-do start` (install: `bun install -g bun-do`)
+**Data**: `~/.bun-do/` (override: `BUNDO_DATA_DIR`)
+**Port**: 8000 (override: `--port=PORT`)
 
-## Quick Reference
+## How users talk (map these to API calls)
+
+| User says | Action |
+|-----------|--------|
+| "add task: buy milk" | POST `/api/tasks` `{"title": "Buy milk"}` |
+| "remind me to call dentist tomorrow" | POST with `{"title": "Call dentist", "date": "TOMORROW", "type": "reminder"}` |
+| "P0 deadline: submit proposal by Friday" | POST with `{"title": "Submit proposal", "date": "FRIDAY", "priority": "P0", "type": "deadline"}` |
+| "add monthly payment: rent €1200 on the 1st" | POST with `{"title": "Rent", "type": "payment", "amount": "1200", "currency": "EUR", "recurrence": {"type": "monthly", "day": 1}}` |
+| "what's overdue?" | GET `/api/tasks`, filter `done=false` where `date < today` |
+| "mark passport task done" | Search by title → PUT `{"done": true}` |
+| "what should I do today?" | GET `/api/tasks`, filter for today's date, sort by priority |
+| "move it to next week" | PUT with `{"date": "NEXT_MONDAY"}` |
+| "add subtask: book flight" | POST `/api/tasks/{id}/subtasks` `{"title": "Book flight"}` |
+| "log progress on bun-do: shipped v1.3" | POST `/api/projects/{id}/entries` `{"summary": "Shipped v1.3"}` |
+
+**Important**: Always resolve relative dates ("tomorrow", "next Friday") to `YYYY-MM-DD` before sending.
+
+## API reference
 
 | Action | Method | Endpoint |
 |--------|--------|----------|
@@ -27,40 +46,42 @@ All mutations persist immediately to JSON files on disk.
 | Add task | POST | `/api/tasks` |
 | Edit task | PUT | `/api/tasks/{id}` |
 | Delete task | DELETE | `/api/tasks/{id}` |
-| Toggle done | PUT | `/api/tasks/{id}` with `{"done": true/false}` |
 | Add subtask | POST | `/api/tasks/{id}/subtasks` |
-| Toggle subtask | PUT | `/api/tasks/{id}/subtasks/{sub_id}` |
-| Delete subtask | DELETE | `/api/tasks/{id}/subtasks/{sub_id}` |
+| Edit subtask | PUT | `/api/tasks/{id}/subtasks/{sid}` |
+| Delete subtask | DELETE | `/api/tasks/{id}/subtasks/{sid}` |
 | Reorder backlog | POST | `/api/tasks/reorder` |
+| Clear done | POST | `/api/tasks/clear-done` |
 | List projects | GET | `/api/projects` |
 | Add project | POST | `/api/projects` |
 | Edit project | PUT | `/api/projects/{id}` |
 | Delete project | DELETE | `/api/projects/{id}` |
-| Add entry | POST | `/api/projects/{id}/entries` |
-| Delete entry | DELETE | `/api/projects/{id}/entries/{eid}` |
+| Add log entry | POST | `/api/projects/{id}/entries` |
+| Delete log entry | DELETE | `/api/projects/{id}/entries/{eid}` |
 
-## Task Fields
+## Task fields
 
 ```json
 {
   "title": "string (required)",
   "date": "YYYY-MM-DD (default: today)",
   "priority": "P0 | P1 | P2 | P3 (default: P2)",
-  "notes": "string (default: empty)",
   "type": "task | deadline | reminder | payment (default: task)",
+  "notes": "string",
+  "done": false,
+  "amount": "string (for payments)",
+  "currency": "CHF | USD | EUR | BRL (default: CHF)",
   "recurrence": null | {"type": "weekly", "dow": 0-6} | {"type": "monthly", "day": 1-31} | {"type": "yearly", "month": 1-12, "day": 1-31}
 }
 ```
 
-**Types**: `task` = regular actionable, `deadline` = hard deadline, `reminder` = informational only, `payment` = bill tracker.
+**Priorities**: P0 = critical/drop everything, P1 = high/do today, P2 = normal, P3 = backlog (not on calendar).
+**Types**: `task` = actionable, `deadline` = hard date, `reminder` = FYI, `payment` = bill/invoice tracker.
+**Recurring**: When a recurring task is marked done, the next occurrence is auto-created.
 
-**Backlog**: Tasks with `type=task` + `priority=P3` appear in a persistent backlog panel (not calendar).
+## Curl patterns
 
-## Instructions
+### Before any operation — check server is up
 
-### Before any operation
-
-Check the server is running:
 ```bash
 curl -sf http://localhost:8000/api/tasks > /dev/null && echo "OK" || echo "Server not running — run: bun-do start"
 ```
@@ -70,35 +91,33 @@ curl -sf http://localhost:8000/api/tasks > /dev/null && echo "OK" || echo "Serve
 ```bash
 curl -s -X POST http://localhost:8000/api/tasks \
   -H 'Content-Type: application/json' \
-  -d '{"title": "Buy milk", "date": "2026-03-01", "priority": "P2", "type": "task"}'
+  -d '{"title": "Buy milk", "date": "2026-03-01", "priority": "P2"}'
 ```
 
-### Add a recurring task
+### Add a recurring payment
 
 ```bash
 curl -s -X POST http://localhost:8000/api/tasks \
   -H 'Content-Type: application/json' \
-  -d '{"title": "Pay rent", "date": "2026-02-28", "priority": "P1", "type": "payment", "recurrence": {"type": "monthly", "day": 28}}'
+  -d '{"title": "Server hosting", "date": "2026-03-01", "priority": "P1", "type": "payment", "amount": "29", "currency": "USD", "recurrence": {"type": "monthly", "day": 1}}'
 ```
 
-### Find a task by title (to get its ID)
+### Find task by title → get ID
 
 ```bash
 curl -s http://localhost:8000/api/tasks | python3 -c "
 import sys, json
 for t in json.load(sys.stdin)['tasks']:
-    if 'SEARCH_TERM' in t['title'].lower():
-        print(t['id'], t['title'])
+    if 'SEARCH' in t['title'].lower(): print(t['id'], t['title'])
 "
 ```
 
-### Edit a task
+### Edit (only send fields to change)
 
-Only send the fields you want to change:
 ```bash
 curl -s -X PUT http://localhost:8000/api/tasks/TASK_ID \
   -H 'Content-Type: application/json' \
-  -d '{"title": "New title", "priority": "P1"}'
+  -d '{"priority": "P0", "date": "2026-03-15"}'
 ```
 
 ### Mark done
@@ -109,13 +128,13 @@ curl -s -X PUT http://localhost:8000/api/tasks/TASK_ID \
   -d '{"done": true}'
 ```
 
-### Delete a task
+### Delete
 
 ```bash
 curl -s -X DELETE http://localhost:8000/api/tasks/TASK_ID
 ```
 
-### Add a subtask
+### Add subtask
 
 ```bash
 curl -s -X POST http://localhost:8000/api/tasks/TASK_ID/subtasks \
@@ -126,40 +145,25 @@ curl -s -X POST http://localhost:8000/api/tasks/TASK_ID/subtasks \
 ### Log project progress
 
 ```bash
-# Find project ID
-curl -s http://localhost:8000/api/projects | python3 -c "
-import sys, json
-for p in json.load(sys.stdin)['projects']:
-    if 'PROJECT_NAME' in p['name'].lower():
-        print(p['id'], p['name'])
-"
-
-# Add progress entry
 curl -s -X POST http://localhost:8000/api/projects/PROJECT_ID/entries \
   -H 'Content-Type: application/json' \
-  -d '{"summary": "Finished figures 1-3, updated results section"}'
+  -d '{"summary": "Shipped v1.3 with MCP server and OpenClaw skill"}'
 ```
 
-### Create a project
+## Proactive patterns
 
-```bash
-curl -s -X POST http://localhost:8000/api/projects \
-  -H 'Content-Type: application/json' \
-  -d '{"name": "my-project", "repo": "https://github.com/user/repo", "description": "Project description"}'
-```
+Use these patterns for scheduled/autonomous behavior:
 
-## Agent Workflow: Record Progress
+**Morning briefing**: GET `/api/tasks`, filter for today + overdue, summarize by priority.
+**End of day**: Mark completed tasks done, add entries to active projects.
+**Weekly review**: List all tasks, highlight overdue + P0/P1 without progress.
+**Payment forecast**: List tasks where `type=payment`, group by month, sum amounts.
 
-When an agent finishes a coding session:
+## Rules
 
-1. **Check server**: verify it's running
-2. **Find the project** by name (or create it if new)
-3. **Add an entry** summarizing what was accomplished
-4. **Optionally update tasks**: mark done, add new tasks discovered during the session
-
-## Tips
-
-- Dates are ISO format: `YYYY-MM-DD`. Omit for today's date.
+- Always verify the server is running before any API call.
+- Never guess IDs — search by title first, then use the UUID.
+- Dates must be `YYYY-MM-DD`. Resolve "tomorrow", "next Monday", etc. before sending.
+- Only send fields you want to change on PUT requests.
 - The API returns the created/updated object on success.
-- `GET /api/tasks` also runs carry-over (moves overdue non-recurring tasks to today).
-- All IDs are UUIDs — always search by title first, never guess IDs.
+- `GET /api/tasks` auto-carries overdue non-payment tasks to today.
