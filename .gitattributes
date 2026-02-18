@@ -1,0 +1,2 @@
+# Vendored minified assets — treat as binary (no diffs, excluded from language stats)
+static/*.min.js binary linguist-generated=true
