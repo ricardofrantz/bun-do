@@ -4,12 +4,15 @@
   "description": "Fast local-first todo app — Bun + Alpine.js, zero dependencies",
   "type": "module",
   "bin": {
-    "bun-do": "cli.ts"
+    "bun-do": "cli.ts",
+    "bun-do-mcp": "mcp.ts"
   },
   "files": [
     "cli.ts",
     "server.ts",
+    "mcp.ts",
     "static/",
+    "skill/",
     "data/tasks.example.json",
     "bin/",
     "README.md",

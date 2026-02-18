@@ -112,6 +112,55 @@ bun run start   # plain server on :8000
 
 The app uses the same backend and storage (`BUNDO_DATA_DIR`), so browser and macOS modes share data.
 
+## LLM Integration
+
+bun-do ships two ways for LLMs to interact with your tasks.
+
+### Option A — Skill (token-efficient, Claude Code / open-claw)
+
+A skill is a Markdown file that teaches the LLM how to call the bun-do REST API directly.
+Uses ~2% of the tokens that an MCP server requires.
+
+```bash
+bun-do install-skill   # copies skill to ~/.claude/skills/bun-do-api/
+```
+
+Restart Claude Code (or start a new session). The LLM can now add, edit, delete, and
+list tasks by calling the API via `curl`.
+
+### Option B — MCP server (Claude Desktop, opencode, any MCP client)
+
+`bun-do-mcp` is a stdio MCP server that exposes 6 tools:
+`list_tasks`, `add_task`, `update_task`, `delete_task`, `list_projects`, `add_project_entry`.
+
+Add to your `.mcp.json` (project-level) or `~/.config/claude/claude_desktop_config.json`:
+
+```json
+{
+  "mcpServers": {
+    "bun-do": {
+      "command": "bun-do-mcp"
+    }
+  }
+}
+```
+
+Custom port:
+
+```json
+{
+  "mcpServers": {
+    "bun-do": {
+      "command": "bun-do-mcp",
+      "env": { "BUNDO_PORT": "9000" }
+    }
+  }
+}
+```
+
+The MCP server talks to the bun-do REST API at `localhost:8000` (or `BUNDO_PORT`).
+Run `bun-do start` before using the MCP server.
+
 ## Configuration
 
 | Variable | Default | Description |

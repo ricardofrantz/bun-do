@@ -9,6 +9,7 @@ import {
   unlinkSync,
   mkdirSync,
   openSync,
+  copyFileSync,
 } from "fs";
 import { spawn } from "child_process";
 
@@ -36,8 +37,9 @@ if (args.includes("--serve")) {
 } else {
 // Parse command and --port
 const command =
-  args.find((a) => ["start", "stop", "restart", "status", "open"].includes(a)) ||
-  "start";
+  args.find((a) =>
+    ["start", "stop", "restart", "status", "open", "install-skill"].includes(a)
+  ) || "start";
 const portArgs = args.filter((a) => a.startsWith("--port="));
 const port = portArgs[0]?.split("=")[1] || "8000";
 const url = `http://localhost:${port}`;
@@ -131,6 +133,20 @@ function openBrowser() {
   spawn(cmd, [url], { detached: true, stdio: "ignore" }).unref();
 }
 
+function installSkill() {
+  const src = join(import.meta.dir, "skill", "SKILL.md");
+  const destDir = join(homedir(), ".claude", "skills", "bun-do-api");
+  const dest = join(destDir, "SKILL.md");
+  if (!existsSync(src)) {
+    console.log("[bun-do] skill/SKILL.md not found in package");
+    process.exit(1);
+  }
+  mkdirSync(destDir, { recursive: true });
+  copyFileSync(src, dest);
+  console.log(`[bun-do] skill installed → ${dest}`);
+  console.log("[bun-do] reload Claude Code to activate (or start a new session)");
+}
+
 switch (command) {
   case "start":
     await start();
@@ -148,6 +164,9 @@ switch (command) {
   case "open":
     await start();
     openBrowser();
+    break;
+  case "install-skill":
+    installSkill();
     break;
 }
 } // end else (service manager)

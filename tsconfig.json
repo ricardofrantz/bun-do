@@ -8,5 +8,5 @@
     "skipLibCheck": true,
     "types": ["bun-types"]
   },
-  "include": ["server.ts", "cli.ts"]
+  "include": ["server.ts", "cli.ts", "mcp.ts"]
 }
