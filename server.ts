@@ -643,6 +643,8 @@ const portArg = Bun.argv.find((a) => a.startsWith("--port="));
 const port = portArg ? parseInt(portArg.split("=")[1]) : 8000;
 
 const server = Bun.serve({
+  // Loopback only: without a hostname Bun listens on every interface, and the API has no login.
+  hostname: "127.0.0.1",
   port,
   async fetch(req: Request): Promise<Response> {
     try {
