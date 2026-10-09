@@ -223,3 +223,14 @@ On first run, `tasks.example.json` seeds `tasks.json` if it doesn't exist.
 ## License
 
 BSD-3-Clause
+
+## Disclaimer
+
+This software is provided "as is", without warranty of any kind. To the extent
+permitted by law, the authors and contributors are not liable for any damage, loss
+or claim arising from its use or misuse. You are responsible for how you use it and
+for following the laws and rules that apply to you. The full terms are in
+[LICENSE](LICENSE).
+
+Your tasks are stored in local files on your computer. You are responsible for
+backing them up, and for who can reach the server if you expose it to a network.
