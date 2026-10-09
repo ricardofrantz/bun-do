@@ -1,5 +1,16 @@
 # Changelog
 
+## [v1.4.1] — 2026-10-09
+
+### Security
+- **Server listens on 127.0.0.1 only.** Before, Bun's default bound every network interface, so anyone on the same network could read and change tasks through the API, which has no login.
+
+### Added
+- `static/THIRD_PARTY_LICENSES.txt` with the MIT licenses of the vendored Alpine.js 3.15.8 and SortableJS 1.15.7.
+- README: a Disclaimer section (no warranty; use and misuse at the user's own risk).
+
+---
+
 ## [v1.4.0] — 2026-02-18
 
 ### Added
