@@ -1781,6 +1781,7 @@ function todoApp() {
   }
 
   return {
+    currencySymbol,
     tasks: [],
     projects: [],
     darkMode: !localStorage.getItem('theme') || localStorage.getItem('theme') === 'dark',
@@ -2600,6 +2601,7 @@ function todoApp() {
     },
 
     formatDayHeaderLong(dateStr) {
+      if (!dateStr) return '';
       const d = parseDate(dateStr);
       return DAYS_FULL[d.getDay()] + ', ' + MONTHS_SHORT[d.getMonth()] + ' ' + d.getDate();
     },
