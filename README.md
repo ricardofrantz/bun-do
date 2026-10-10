@@ -94,6 +94,12 @@ Or without hot reload:
 bun run start   # plain server on :8000
 ```
 
+Run the tests (API, CLI and MCP server, each against a real server with a temporary data directory):
+
+```bash
+bun test
+```
+
 ### Background service (source clone)
 
 ```bash
