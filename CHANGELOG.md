@@ -1,5 +1,30 @@
 # Changelog
 
+## [v1.4.2] — 2026-10-11
+
+v1.4.1 was tagged but never reached npm; this release carries its changes too.
+
+### Security
+- **Foreign Host headers are refused.** The server answered any Host header, so a web page that points its own domain at 127.0.0.1 (DNS rebinding) could read every task and payment. It now answers only `localhost` and `127.0.0.1`.
+- **Writes must come from the app's own origin.** A write that carries an `Origin` header is refused unless the origin is this server. Before, any origin on `localhost`, on any port, could change tasks. Requests without `Origin` (curl, the MCP server, scripts) still work.
+
+### Fixed
+- **The native macOS app could not save changes.** It loads the page from `127.0.0.1`, and the write check accepted only `localhost`. Saving from `http://127.0.0.1:<port>` now works.
+- **New tasks near midnight got the wrong date.** "Today" was the UTC date while every other date was local, so new tasks and carried-over tasks could land on yesterday or tomorrow. "Today" is now the local date.
+- **Payment amounts stayed blank** in the Day and Payments lists. They now show with their currency symbol.
+- The page threw a console error on load while no calendar day was selected. It no longer does.
+- The MCP server now calls `127.0.0.1` instead of `localhost`, which can resolve to `::1`, where the server does not listen.
+
+### Added
+- Test suite (`bun test`): API, CLI and MCP server, each against a real server with a temporary data directory.
+- CI: the tests run on Ubuntu and macOS for every push and pull request.
+
+### Changed
+- Vendored Alpine.js 3.15.8 → 3.17.4.
+- npm releases use trusted publishing: no npm token is stored anywhere, and npm attaches provenance to each release. The publish job runs the tests and refuses a tag that does not match the `package.json` version.
+
+---
+
 ## [v1.4.1] — 2026-10-09
 
 ### Security
