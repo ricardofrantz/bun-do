@@ -7,7 +7,8 @@ import { readFileSync } from "fs";
 import { join } from "path";
 
 const pkg = JSON.parse(readFileSync(join(import.meta.dir, "package.json"), "utf-8"));
-const BASE = `http://localhost:${process.env.BUNDO_PORT || 8000}`;
+// 127.0.0.1, not localhost: the server listens on IPv4 loopback only, and localhost can resolve to ::1.
+const BASE = `http://127.0.0.1:${process.env.BUNDO_PORT || 8000}`;
 
 async function api(method: string, path: string, body?: unknown): Promise<unknown> {
   const res = await fetch(`${BASE}${path}`, {

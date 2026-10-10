@@ -66,6 +66,7 @@ const TASK_TYPES = ["task", "deadline", "reminder", "payment"] as const;
 const CURRENCIES = ["CHF", "USD", "EUR", "BRL"];
 const RECURRENCE_TYPES = ["weekly", "monthly", "yearly"];
 const PROJECT_STATUSES = ["active", "paused", "completed", "archived"] as const;
+const LOOPBACK_HOSTS = new Set(["localhost", "127.0.0.1"]);
 
 function sanitizeRecurrence(raw: unknown): Recurrence | null {
   if (!raw || typeof raw !== "object") return null;
@@ -549,6 +550,13 @@ async function handleRequest(req: Request): Promise<Response> {
   const path = url.pathname;
   const method = req.method;
 
+  // -- Host check: answer only requests addressed to a loopback name --
+  // A web page that points its own domain at 127.0.0.1 (DNS rebinding) sends that domain here.
+  const host = (req.headers.get("host") ?? "").toLowerCase();
+  if (!LOOPBACK_HOSTS.has(host.replace(/:\d+$/, ""))) {
+    return new Response("Forbidden", { status: 403 });
+  }
+
   // -- Static files --
   if (path === "/" || path === "/index.html") {
     const file = Bun.file(join(STATIC_DIR, "index.html"));
@@ -571,9 +579,11 @@ async function handleRequest(req: Request): Promise<Response> {
   }
 
   // -- CSRF check for mutating API requests --
+  // Browsers send Origin on every cross-site write; it must be this server's own origin.
+  // Requests without Origin (curl, the MCP server) are allowed.
   if (path.startsWith("/api/") && method !== "GET") {
     const origin = req.headers.get("origin");
-    if (origin && !/^https?:\/\/localhost(:\d+)?$/.test(origin)) {
+    if (origin !== null && origin.toLowerCase() !== `http://${host}`) {
       return new Response("Forbidden", { status: 403 });
     }
   }
