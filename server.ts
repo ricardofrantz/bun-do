@@ -126,7 +126,8 @@ const MIME: Record<string, string> = {
 // ---------------------------------------------------------------------------
 
 function today(): string {
-  return new Date().toISOString().slice(0, 10);
+  // Local calendar date. toISOString() gives the UTC date, which is a day off near midnight.
+  return formatDate(new Date());
 }
 
 function isoToDate(value: string | null | undefined): string {
